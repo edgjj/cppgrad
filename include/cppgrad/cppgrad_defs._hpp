@@ -1,0 +1,8 @@
+#pragma once
+
+#ifdef WEABOOST_LOG_ENABLED
+	#include <spdlog/spdlog.h>
+	#define WEABOOST_LOG(x, ...) spdlog::info(x, ...)
+#else
+	#define WEABOOST_LOG(x, ...)
+#endif

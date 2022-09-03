@@ -1,0 +1,11 @@
+doc/
+build/
+builds/
+cmake-build-debug/
+cmake-build-release/
+!CMakeLists.txt
+!*.cpp
+!*.hpp
+!*.c
+!*.h
+!Doxyfile
