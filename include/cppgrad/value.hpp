@@ -14,21 +14,31 @@ namespace cppgrad
 template <typename T>
 class Value;
 
+template <typename T>
+using ValuePtr = Value<T>*;
+
 namespace util
 {
 
 template <typename T>
-void build_topo(Value<T>& v
-	, std::set<Value<T>>& visited
-	, std::vector<Value<T>>& topo)
+void build_topo(ValuePtr<T> v
+	, std::set<ValuePtr<T>>& visited
+	, std::vector<ValuePtr<T>>& topo)
 {
+	if (!v)
+	{
+		return;
+	}
+
 	if (visited.count(v) == 0)
 	{
 		visited.insert(v);
-		for (auto& child : v._prev)
-		{
-			build_topo(child, visited, topo);
-		}
+
+		auto [left, right] = v->_prev;
+
+		build_topo(left, visited, topo);
+		build_topo(right, visited, topo);
+
 		topo.push_back(v);
 	}
 }
@@ -41,16 +51,25 @@ class Value
 public:
 	using BackwardFun = std::function<void(T&, T&)>;
 
-	Value(T&& data, BackwardFun&& backward = BackwardFun{})
+	/*
+		We use this since all ops are binary or unary.
+	*/
+	using BinaryPair = std::pair<Value<T>*, Value<T>*>;
+
+	Value(T&& data, 
+		BackwardFun&& backward = BackwardFun{}, 
+		BinaryPair parents = BinaryPair{})
 		: _data{ std::move(data) }
 		, _grad{ 0 }
 		, _backward{ std::move(backward) }
+		, _prev{ parents }
 	{}
 
 	// holy shit
-	friend void util::build_topo(Value<T>& v
-		, std::set<Value<T>>& visited
-		, std::vector<Value<T>>& topo);
+	//using util::build_topo;
+	friend void util::build_topo(ValuePtr<T> v
+		, std::set<ValuePtr<T>>& visited
+		, std::vector<ValuePtr<T>>& topo);
 
 	friend Value<T> operator+(Value<T>& lhs, Value<T>& rhs)
 	{
@@ -59,8 +78,10 @@ public:
 			rhs._grad += localGrad;
 		};
 
+		BinaryPair parents{ &lhs, &rhs };
 		auto output = Value<T>(lhs._data + rhs._data
-			, std::move(fun));
+			, std::move(fun)
+			, parents);
 
 		return output;
 	}
@@ -72,8 +93,10 @@ public:
 			rhs._grad += lhs._data * localGrad;
 		};
 
+		BinaryPair parents{ &lhs, &rhs };
 		auto output = Value<T>(lhs._data * rhs._data
-			, std::move(fun));
+			, std::move(fun)
+			, parents);
 
 		return output;
 	}
@@ -86,8 +109,11 @@ public:
 			_grad += rhs * pow(_data, rhs - 1) * localGrad;
 		};
 
+		BinaryPair parents{ this, nullptr };
+
 		auto output = Value<T>(pow(_data, rhs)
-			, std::move(fun));
+			, std::move(fun)
+			, parents);
 
 		return output;
 	}
@@ -98,8 +124,11 @@ public:
 			_grad += (localData > 0) * localGrad;
 		};
 
+		BinaryPair parents{ this, nullptr };
+
 		auto output = Value<T>(_data < 0 ? 0 : _data
-			, std::move(fun));
+			, std::move(fun)
+			, parents);
 
 		return output;
 	}
@@ -109,18 +138,22 @@ public:
 	*/
 	void backward()
 	{
-		using Val = Value<T>;
+		std::vector<ValuePtr<T>> topo;
+		std::set<ValuePtr<T>> visited; // can't use set here, see below
 
-		std::vector<Val> topo;
-		std::set<Val> visited;
-
-		_grad = 1;
+		_grad = T( 1 );
 		
+		util::build_topo(this, visited, topo);
 		
 		for (auto rit = visited.rbegin(); rit != visited.rend(); rit++)
 		{
-			Val& cur = *rit;
-			cur._backward(cur._data, cur._grad);
+			ValuePtr<T> cur = *rit;
+
+			// check if _backward exists
+			if (cur->_backward)
+			{
+				cur->_backward(cur->_data, cur->_grad);
+			}
 		}
 	}
 
@@ -129,6 +162,7 @@ private:
 	T _data;
 
 	BackwardFun _backward; // already nulled
+	BinaryPair _prev; 
 };
 
 }
