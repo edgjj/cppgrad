@@ -10,6 +10,8 @@
 #include <memory>
 #include <optional>
 
+#include "misc_ops.hpp"
+
 namespace cppgrad 
 {
 
@@ -24,38 +26,29 @@ namespace util
 {
 
 template <typename T>
-struct ValueComparator
-{
-	constexpr bool operator()(ValuePtr<T> a, ValuePtr<T> b) const
-	{
-		return a->_storage < b->_storage;
-	}
-};
-
-template <typename T>
 void build_topo(ValuePtr<T> v
-	, std::set<ValuePtr<T>, util::ValueComparator<T>>& visited
 	, std::vector<ValuePtr<T>>& topo)
 {
-	if (!v)
+	if (v && !v->visited())
 	{
-		return;
-	}
-
-	if (visited.count(v) == 0)
-	{
-		std::cout << "[toposort] visiting: " << v << " op type: " << v->_op << " grad: " << v->_storage->grad << " value: " << v->_storage->val << '\n';
-		std::cout << "\t" << " parent 1: " << v->_prev.first << " parent 2: " << v->_prev.second << '\n';
-
-		visited.insert(v);
-
 		auto [left, right] = v->_prev;
 
-		build_topo(left, visited, topo);
-		build_topo(right, visited, topo);
+		v->visited() = true;
+
+		build_topo(left, topo);
+		build_topo(right, topo);
 
 		topo.push_back(v);
 	}
+}
+
+template <typename T>
+std::vector<ValuePtr<T>> build_topo(ValuePtr<T> v)
+{
+	std::vector<ValuePtr<T>> topo;
+	build_topo(v, topo);
+
+	return std::move(topo);
 }
 
 }
@@ -78,23 +71,16 @@ public:
 	{}
 
 	Value(T&& data, 
-		BinaryPair parents = BinaryPair{},
-		std::string op_name = "")
+		BinaryPair parents = BinaryPair{})
 		: _storage(std::make_shared<ValueData<T>>(std::move(data), 0))
 		, _prev{ parents }
-		, _op{ op_name }
 	{}
 
-	// holy shit
-	//using util::build_topo;
-	friend void util::build_topo(ValuePtr<T> v
-		, std::set<ValuePtr<T>, util::ValueComparator<T>>& visited
-		, std::vector<ValuePtr<T>>& topo);
+	template <typename Ty>
+	friend void util::build_topo(ValuePtr<Ty> v
+		, std::vector<ValuePtr<Ty>>& topo);
 
-	// needed for set support
-	friend struct util::ValueComparator<T>;
-
-	Value<T> operator+(Value<T>& rhs)
+	Value<T> operator+(const Value<T>& rhs) const
 	{
 		auto self = _storage,
 			other = rhs._storage;
@@ -105,8 +91,7 @@ public:
 		};
 
 		auto output = Value<T>(self->val + other->val
-			, parents
-			, "+");
+			, parents);
 
 		output._backward = [self, other, out = output._storage]() {
 			self->grad += out->grad;
@@ -116,7 +101,7 @@ public:
 		return output;
 	}
 	
-	Value<T> operator*(Value<T>& rhs)
+	Value<T> operator*(const Value<T>& rhs) const
 	{
 		auto self = _storage,
 			other = rhs._storage;
@@ -127,8 +112,7 @@ public:
 		};
 
 		auto output = Value<T>(self->val * other->val
-			, parents
-			, "*");
+			, parents);
 
 		output._backward = [self, other, out = output._storage]() {
 			self->grad += other->val * out->grad;
@@ -138,29 +122,29 @@ public:
 		return output;
 	}
 	
-	Value<T> pow(Value<T>& rhs)
+	Value<T> pow(const Value<T>& rhs) const
 	{
 		using std::pow;
 
-		auto self = lhs._storage;
+		auto self = _storage,
+			other = rhs._storage;
 		
 		BinaryPair parents{
 			std::make_shared<Value<T>>(*this),
 			std::nullptr_t{}
 		};
 
-		auto output = Value<T>(pow(self->val, rhs)
-			, parents
-			, "pow");
+		auto output = Value<T>(pow(self->val, other->val)
+			, parents);
 
-		output._backward = [self, rhs, out = output._storage]() {
-			self->grad += rhs * pow(self->val, rhs - 1) * out->grad;
+		output._backward = [self, other, out = output._storage]() {
+			self->grad += other->val * pow(self->val, other->val - 1) * out->grad;
 		};
 
 		return output;
 	}
 
-	Value<T> relu()
+	Value<T> relu() const
 	{
 		auto self = _storage;
 
@@ -170,8 +154,7 @@ public:
 		};
 
 		auto output = Value<T>(self->val < 0 ? 0 : self->val // this should be replaced with better op
-			, parents
-			, "relu");
+			, parents);
 
 		output._backward = [self, out = output._storage]() {
 			self->grad += (out->val > 0) * out->grad;
@@ -183,28 +166,18 @@ public:
 	/*!
 	*	Calculates gradient using backprop. 
 	*/
+
 	void backward()
 	{
-		std::vector<ValuePtr<T>> topo;
-		// we got std::hash specialization for this, so its ok
-		std::set<ValuePtr<T>, util::ValueComparator<T>> visited;
-
 		auto self = std::make_shared<Value<T>>(*this);
-		util::build_topo(self, visited, topo);
-		
+		std::vector<ValuePtr<T>> topo = util::build_topo(self);
 		_storage->grad = T(1);
 
-		for (auto rit = visited.rbegin(); rit != visited.rend(); rit++)
+		for (auto rit = topo.rbegin(); rit != topo.rend(); rit++)
 		{
 			ValuePtr<T> cur = *rit;
-			// check if _backward exists
-			if (cur->_backward)
-			{
-				cur->_backward();
-
-				std::cout << "[bward] visiting: " << cur << " op type: " << cur->_op << " grad: " << cur->_storage->grad << " value: " << cur->_storage->val << '\n';
-
-			}
+			cur->_backward();
+			cur->visited() = false;
 		}
 	}
 
@@ -220,22 +193,29 @@ public:
 
 private:
 
-	template <typename T>
+	bool& visited()
+	{
+		return _storage->_visited;
+	}
+
+	template <typename Ty>
 	struct ValueData
 	{
-		ValueData(T&& _val, T&& _grad)
+		ValueData(Ty&& _val, Ty&& _grad)
 			: val(std::move(_val))
 			, grad(std::move(_grad))
 		{}
 
-		T val;
-		T grad;
+		Ty val;
+		Ty grad;
+
+		bool _visited = false;
 	};
 
 	using DataPtr = std::shared_ptr<ValueData<T>>;
 	DataPtr _storage;
 
-	BackwardFun _backward; // already nulled
+	BackwardFun _backward = [] {}; // already nulled
 	BinaryPair _prev; 
 
 	std::string _op;

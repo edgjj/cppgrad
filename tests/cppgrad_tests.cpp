@@ -22,9 +22,27 @@ TEST(SanityTest, MicrogradInheritedSuite)
     EXPECT_DOUBLE_EQ(y.data(), 8.0);
 }
 
-//TEST(MoreOpsTest, MicrogradInheritedSuite)
-//{
-//	//boost::beast::
-//
-//	EXPECT_EQ(7 * 6, 42);
-//}
+TEST(MoreOpsTest, MicrogradInheritedSuite)
+{
+    auto a = Value(-4.0);
+    auto b = Value(2.0);
+    auto c = a + b;
+    auto d = a * b + b.pow(3.0);
+    c += c + 1.0;
+    c += 1.0 + c + (-a);
+    d += d * 2 + (b + a).relu();
+    d += 3.0 * d + (b - a).relu();
+    auto e = c - d;
+    auto f = e.pow(2);
+    auto g = f / 2.0;
+    g += 10.0 / f;
+    g.backward();
+
+    std::cout << "a grad: " << a.grad() << '\n';
+    std::cout << "b grad: " << b.grad() << '\n';
+    std::cout << "c grad: " << c.grad() << '\n';
+
+    std::cout << "g value: " << g.data() << '\n';
+
+
+}

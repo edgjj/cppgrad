@@ -4,21 +4,21 @@
 namespace cppgrad
 {
 
-//// forward decl for toposort
-//template <typename T>
-//class Value;
+// forward decl for toposort
+template <typename T>
+class Value;
+
+template <typename T>
+Value<T> operator-(const Value<T>& lhs)
+{
+	return lhs * T(-1.0);
+}
 //
-//template <typename T>
-//Value<T> operator-(Value<T>& lhs)
-//{
-//	return lhs * T(-1.0);
-//}
-//
-//template <typename T>
-//Value<T> operator-(Value<T>& lhs, Value<T>& rhs)
-//{
-//	return lhs + (-rhs);
-//}
+template <typename T>
+Value<T> operator-(const Value<T>& lhs, const Value<T>& rhs)
+{
+	return lhs + (-rhs);
+}
 //
 //template <typename T>
 //Value<T> operator/(Value<T>& lhs, Value<T>& rhs)
@@ -26,35 +26,35 @@ namespace cppgrad
 //	return lhs *rhs.pow(-1.0);
 //}
 //
-//template <typename T>
-//Value<T> operator+(T lhs, Value<T>& rhs)
-//{
-//	return Value<T>(std::move(lhs)) + rhs;
-//}
+template <typename T>
+Value<T> operator+(T lhs, const Value<T>& rhs)
+{
+	return Value<T>(std::move(lhs)) + rhs;
+}
 //
-//template <typename T>
-//Value<T> operator*(T lhs, Value<T>& rhs)
-//{
-//	return Value<T>(std::move(lhs)) * rhs;
-//}
-//
-//template <typename T>
-//Value<T> operator/(T lhs, Value<T>& rhs)
-//{
-//	return Value<T>(std::move(lhs)) * rhs.pow(-1);
-//}
-//
-//template <typename T>
-//Value<T> operator/(Value<T>& lhs, T rhs)
-//{
-//	return lhs * Value<T>(std::move(lhs)).pow(-1);
-//}
-//
-//template <typename T>
-//Value<T> operator+= (Value<T>& lhs, Value<T>& rhs)
-//{
-//	return lhs + rhs;
-//}
+template <typename T>
+Value<T> operator*(T lhs, const Value<T>& rhs)
+{
+	return Value<T>(std::move(lhs)) * rhs;
+}
+
+template <typename T>
+Value<T> operator/(T lhs, const Value<T>& rhs)
+{
+	return Value<T>(std::move(lhs)) * rhs.pow(-1);
+}
+
+template <typename T>
+Value<T> operator/(const Value<T>& lhs, T rhs)
+{
+	return lhs * Value<T>(std::move(rhs)).pow(-1);
+}
+
+template <typename T>
+Value<T> operator+= (const Value<T>& lhs, const Value<T>& rhs)
+{
+	return lhs + rhs;
+}
 
 }
 
