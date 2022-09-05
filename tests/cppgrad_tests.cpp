@@ -15,8 +15,11 @@ TEST(SanityTest, MicrogradInheritedSuite)
    // auto y = h + q;
     y.backward();
 
-    std::cout << "current x grad value: " << x.get_grad() << '\n';
-    std::cout << "current y value: " << y.get_data() << '\n';
+    std::cout << "current x grad value: " << x.grad() << '\n';
+    std::cout << "current y value: " << y.data() << '\n';
+
+    EXPECT_DOUBLE_EQ(x.grad(), -6.0);
+    EXPECT_DOUBLE_EQ(y.data(), 8.0);
 }
 
 //TEST(MoreOpsTest, MicrogradInheritedSuite)

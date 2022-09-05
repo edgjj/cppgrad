@@ -26,7 +26,7 @@ namespace util
 template <typename T>
 struct ValueComparator
 {
-	constexpr bool operator()(const ValuePtr<T>& a, const ValuePtr<T>& b) const
+	constexpr bool operator()(ValuePtr<T> a, ValuePtr<T> b) const
 	{
 		return a->_storage < b->_storage;
 	}
@@ -59,7 +59,6 @@ void build_topo(ValuePtr<T> v
 }
 
 }
-
 
 template <typename T>
 class Value
@@ -209,12 +208,12 @@ public:
 		}
 	}
 
-	T& get_grad()
+	T& grad()
 	{
 		return _storage->grad;
 	}
 
-	T& get_data()
+	T& data()
 	{
 		return _storage->val;
 	}
