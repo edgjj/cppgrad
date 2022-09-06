@@ -100,6 +100,18 @@ public:
 
 		return output;
 	}
+
+	Value<T> operator+=(const Value<T>& rhs)
+	{
+		*this = *this + rhs;
+		return *this;
+	}
+
+	Value<T> operator-=(const Value<T>& rhs)
+	{
+		*this = *this + rhs * T(-1.0);
+		return *this;
+	}
 	
 	Value<T> operator*(const Value<T>& rhs) const
 	{
@@ -144,6 +156,7 @@ public:
 		return output;
 	}
 
+	// move this outside tha class
 	Value<T> relu() const
 	{
 		auto self = _storage;
@@ -177,7 +190,12 @@ public:
 		{
 			ValuePtr<T> cur = *rit;
 			cur->_backward();
-			cur->visited() = false;
+			std::cout << "[bward] visiting " << cur << " grad: " << cur->grad() << " value: " << cur->data() << " \n";
+		}
+
+		for (auto& i : topo)
+		{
+			i->visited() = false;
 		}
 	}
 
