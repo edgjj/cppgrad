@@ -48,7 +48,7 @@ std::vector<ValuePtr<T>> build_topo(ValuePtr<T> v)
 	std::vector<ValuePtr<T>> topo;
 	build_topo(v, topo);
 
-	return std::move(topo);
+	return topo;
 }
 
 }
@@ -101,18 +101,6 @@ public:
 		return output;
 	}
 
-	Value<T> operator+=(const Value<T>& rhs)
-	{
-		*this = *this + rhs;
-		return *this;
-	}
-
-	Value<T> operator-=(const Value<T>& rhs)
-	{
-		*this = *this + rhs * T(-1.0);
-		return *this;
-	}
-	
 	Value<T> operator*(const Value<T>& rhs) const
 	{
 		auto self = _storage,
