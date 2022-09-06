@@ -1,9 +1,11 @@
 #include <cppgrad/cppgrad.hpp>
 #include <gtest/gtest.h>
 
+#include "nn_module_tests.hpp"
+
 using namespace cppgrad;
 
-TEST(SanityTest, MicrogradInheritedSuite)
+TEST(MicrogradInheritedSuite, SanityTest)
 {
     auto x = Value(-2.0);
     auto z = Value(2.0) * x + Value(2.0) + x;
@@ -22,7 +24,7 @@ TEST(SanityTest, MicrogradInheritedSuite)
     EXPECT_DOUBLE_EQ(y.data(), 8.0);
 }
 
-TEST(MoreOpsTest, MicrogradInheritedSuite)
+TEST(MicrogradInheritedSuite, MoreOpsTest)
 {
     auto a = Value(-4.0);
     auto b = Value(2.0);

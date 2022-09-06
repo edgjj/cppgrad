@@ -213,7 +213,7 @@ private:
 		{}
 
 		Ty val;
-		Ty grad;
+		Ty grad; // i think its possible to disable grad usage with NoGradGuard
 
 		bool _visited = false;
 	};
@@ -223,8 +223,6 @@ private:
 
 	BackwardFun _backward = [] {}; // already nulled
 	BinaryPair _prev; 
-
-	std::string _op;
 };
 
 }

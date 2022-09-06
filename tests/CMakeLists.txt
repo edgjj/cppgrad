@@ -5,6 +5,7 @@ include (GoogleTest)
 
 set (CPPGRAD_TESTS_SRC
 	cppgrad_tests.cpp
+	nn_module_tests.hpp
 )
 
 add_executable(cppgrad_tests ${CPPGRAD_TESTS_SRC})
