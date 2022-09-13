@@ -5,7 +5,9 @@ project(cppgrad VERSION 0.0.1 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED)
 
-file (GLOB CPPGRAD_HDR include/cppgrad/*.hpp)
+file (GLOB 
+	CPPGRAD_HDR 
+	include/cppgrad/*.hpp)
 
 set (CPPGRAD_SRC
 	src/stub.cpp)

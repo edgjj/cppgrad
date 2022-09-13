@@ -1,16 +1,13 @@
 #ifndef CPPGRAD_VALUE_HPP
 #define CPPGRAD_VALUE_HPP
 
-#include <utility>
-#include <functional>
-#include <cmath>
-#include <vector>
-#include <set>
-#include <iostream>
-#include <memory>
-#include <optional>
+#include <utility>		// std::move
+#include <functional>	// std::function
+#include <cmath>		// std::pow
+#include <vector>		// std::vector
+#include <memory>		// std::shared_ptr
 
-#include "misc_ops.hpp"
+#include "misc_ops.hpp"	// plus, minus, etc overloads
 
 namespace cppgrad 
 {
@@ -22,7 +19,7 @@ class Value;
 template <typename T>
 using ValuePtr = std::shared_ptr<Value<T>>;
 
-namespace util
+namespace impl
 {
 
 template <typename T>
@@ -77,7 +74,7 @@ public:
 	{}
 
 	template <typename Ty>
-	friend void util::build_topo(ValuePtr<Ty> v
+	friend void impl::build_topo(ValuePtr<Ty> v
 		, std::vector<ValuePtr<Ty>>& topo);
 
 	Value<T> operator+(const Value<T>& rhs) const
@@ -171,14 +168,14 @@ public:
 	void backward()
 	{
 		auto self = std::make_shared<Value<T>>(*this);
-		std::vector<ValuePtr<T>> topo = util::build_topo(self);
+		std::vector<ValuePtr<T>> topo = impl::build_topo(self);
 		_storage->grad = T(1);
 
 		for (auto rit = topo.rbegin(); rit != topo.rend(); rit++)
 		{
 			ValuePtr<T> cur = *rit;
 			cur->_backward();
-			std::cout << "[bward] visiting " << cur << " grad: " << cur->grad() << " value: " << cur->data() << " \n";
+			//std::cout << "[bward] visiting " << cur << " grad: " << cur->grad() << " value: " << cur->data() << " \n";
 		}
 
 		for (auto& i : topo)
@@ -199,7 +196,7 @@ public:
 
 private:
 
-	bool& visited()
+	bool& visited() // pathetic evil
 	{
 		return _storage->_visited;
 	}

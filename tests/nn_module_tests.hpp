@@ -29,7 +29,7 @@ struct Linear : public nn::Module
 	{
 		return value * 2;
 	}
-
+	 
 };
 
 struct JustNet : public nn::Module
