@@ -13,11 +13,6 @@
 namespace cppgrad
 {
 
-class TensorItem
-{
-
-};
-
 class Tensor
 {
 public:
@@ -85,6 +80,18 @@ private:
 #ifdef CPPGRAD_HAS_RTTI
 	std::type_index _type_holder;
 #endif
+
+
+
+	/*
+		we do need to make following things:
+			per-dimension strides (basically a step for which we should advance for chosen dimension)
+			stride-based indexing
+
+		... PROFIT!
+
+		
+	*/
 
 };
 

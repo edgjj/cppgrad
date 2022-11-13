@@ -5,6 +5,12 @@ project(cppgrad VERSION 0.0.1 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED)
 
+string(
+    COMPARE EQUAL
+    "${CMAKE_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}"
+    IS_TOP_PROJECT
+)
+
 file (GLOB 
 	CPPGRAD_HDR 
 	include/cppgrad/*.hpp)
@@ -25,12 +31,14 @@ set_target_properties(cppgrad
     PROPERTIES LINKER_LANGUAGE CXX
 )
 
-if (BUILD_TESTS)
-	include(CTest)
-	enable_testing()
-	add_subdirectory(tests)
-endif()
+if (IS_TOP_PROJECT)
+	if (BUILD_TESTS)
+		include(CTest)
+		enable_testing()
+		add_subdirectory(tests)
+	endif()
 
-if (BUILD_EXAMPLES)
-	add_subdirectory(examples)
+	if (BUILD_EXAMPLES)
+		add_subdirectory(examples)
+	endif()
 endif()

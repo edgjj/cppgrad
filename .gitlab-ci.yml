@@ -1,0 +1,58 @@
+
+build-debian:
+  stage: build
+  tags:
+    - debian
+  script: 
+    - mkdir build && cd build
+    - cmake ..
+    - cmake --build . --config Release
+
+build-windows:
+  stage: build
+  tags:
+    - windows
+  script:
+    - mkdir build
+    - cd build
+    - cmake ..
+    - cmake --build . --config Release
+
+build-macos:
+  stage: build
+  tags:
+    - macos
+  script:
+    - mkdir build && cd build
+    - cmake ..
+    - cmake --build . --config Release
+
+test-debian:
+  stage: test
+  tags:
+    - debian
+  dependencies:
+    - build-debian
+  script:
+    - cd build
+    - ctest . 
+
+test-debian:
+  stage: test
+  tags:
+    - windows
+  dependencies:
+    - build-windows
+  script:
+    - cd build
+    - ctest . 
+
+test-macos:
+  stage: test
+  tags:
+    - macos
+  dependencies:
+    - build-macos
+  script:
+    - cd build
+    - ctest . 
