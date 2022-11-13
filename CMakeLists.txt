@@ -24,7 +24,7 @@ add_library (cppgrad
 	${CPPGRAD_HDR}
 )
 
-target_include_directories(cppgrad PRIVATE include/)
+target_include_directories(cppgrad PUBLIC include/)
 target_link_libraries(cppgrad PRIVATE)
 
 set_target_properties(cppgrad

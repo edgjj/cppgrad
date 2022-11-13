@@ -8,15 +8,15 @@ set (CPPGRAD_TESTS_SRC
 	nn_module_tests.hpp
 )
 
-add_executable(cppgrad_tests ${CPPGRAD_TESTS_SRC})
-target_link_libraries(cppgrad_tests cppgrad gtest_main)
+function (add_cppgrad_test name source_path) 
+    add_executable( ${name} ${source_path} )
+	target_link_libraries(${name} PRIVATE cppgrad gtest_main)
+    gtest_discover_tests(${name} WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/tests)
+endfunction()
 
-target_include_directories(cppgrad_tests 
-	PRIVATE 
-	${PROJECT_SOURCE_DIR}/include 
-	${GOOGLETEST_PATH}
-)
+file (GLOB TESTS_SOURCES *.cpp)
 
-gtest_discover_tests(cppgrad_tests
-	WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/tests
-)
+foreach(src_path ${TESTS_SOURCES} )
+    get_filename_component(name ${src_path} NAME_WE)
+    add_cppgrad_test(${name} ${src_path})
+endforeach()

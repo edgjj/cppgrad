@@ -5,7 +5,7 @@
 
 using namespace cppgrad;
 
-TEST(MicrogradInheritedSuite, SanityTest)
+TEST(MicrogradInherited, SanityTest)
 {
     auto x = Value(-2.0);
     auto z = Value(2.0) * x + Value(2.0) + x;
@@ -24,7 +24,7 @@ TEST(MicrogradInheritedSuite, SanityTest)
     EXPECT_DOUBLE_EQ(y.data(), 8.0);
 }
 
-TEST(MicrogradInheritedSuite, MoreOpsTest)
+TEST(MicrogradInherited, MoreOpsTest)
 {
     auto a = Value(-4.0);
     auto b = Value(2.0);

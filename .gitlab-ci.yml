@@ -7,7 +7,7 @@ build-debian:
     untracked: true
   script: 
     - mkdir build && cd build
-    - cmake -DBUILD_TESTS=ON ..
+    - cmake -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON ..
     - cmake --build . --config Release
 
 build-windows:
@@ -19,7 +19,7 @@ build-windows:
   script:
     - mkdir build
     - cd build
-    - cmake -DBUILD_TESTS=ON ..
+    - cmake -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON ..
     - cmake --build . --config Release
 
 build-macos:
@@ -30,7 +30,7 @@ build-macos:
     untracked: true
   script:
     - mkdir build && cd build
-    - cmake -DBUILD_TESTS=ON ..
+    - cmake -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON ..
     - cmake --build . --config Release
 
 test-debian:

@@ -2,9 +2,14 @@ set (CPPGRAD_EXAMPLES_SRC
 	example1.cpp
 )
 
-add_executable(cppgrad_examples ${CPPGRAD_EXAMPLES_SRC})
-target_link_libraries(cppgrad_examples cppgrad)
-target_include_directories(cppgrad_examples 
-	PRIVATE 
-	${PROJECT_SOURCE_DIR}/include
-)
+function (add_cppgrad_example name source_path) 
+    add_executable( ${name} ${source_path})
+	target_link_libraries(${name} PRIVATE cppgrad)
+endfunction()
+
+file (GLOB EXAMPLE_SOURCES *.cpp)
+
+foreach(src_path ${EXAMPLE_SOURCES} )
+    get_filename_component(name ${src_path} NAME_WE)
+    add_cppgrad_example("${name}" ${src_path})
+endforeach()
