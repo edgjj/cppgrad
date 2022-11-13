@@ -1,6 +1,8 @@
 #ifndef CPPGRAD_NN_HPP
 #define CPPGRAD_NN_HPP
 
+#include <vector>
+
 namespace cppgrad {
 
 namespace nn {

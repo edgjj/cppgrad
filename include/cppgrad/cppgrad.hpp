@@ -4,5 +4,4 @@
 #include <cppgrad/nn.hpp>
 #include <cppgrad/value.hpp>
 
-
 #endif
