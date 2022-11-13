@@ -14,7 +14,7 @@ TEST(MicrogradInherited, SanityTest)
     auto q = z.relu() + z * x;
 
     auto y = h + q + q * x;
-   // auto y = h + q;
+    // auto y = h + q;
     y.backward();
 
     std::cout << "current x grad value: " << x.grad() << '\n';
@@ -38,7 +38,7 @@ TEST(MicrogradInherited, MoreOpsTest)
     auto f = e.pow(2);
     auto g = f / 2.0;
     g += 10.0 / f;
-    
+
     g.backward();
 
     EXPECT_NEAR(a.grad(), 138.8338192419825, 1e-8);
@@ -50,5 +50,4 @@ TEST(MicrogradInherited, MoreOpsTest)
     EXPECT_NEAR(e.data(), -7.0, 1e-8);
     EXPECT_NEAR(f.data(), 49.0, 1e-8);
     EXPECT_NEAR(g.data(), 24.70408163265306, 1e-8);
-
 }
