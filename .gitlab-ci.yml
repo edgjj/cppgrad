@@ -3,28 +3,34 @@ build-debian:
   stage: build
   tags:
     - debian
+  artifacts:
+    untracked: true
   script: 
     - mkdir build && cd build
-    - cmake ..
+    - cmake -DBUILD_TESTS=ON ..
     - cmake --build . --config Release
 
 build-windows:
   stage: build
   tags:
     - windows
+  artifacts:
+    untracked: true
   script:
     - mkdir build
     - cd build
-    - cmake ..
+    - cmake -DBUILD_TESTS=ON ..
     - cmake --build . --config Release
 
 build-macos:
   stage: build
   tags:
     - macos
+  artifacts:
+    untracked: true
   script:
     - mkdir build && cd build
-    - cmake ..
+    - cmake -DBUILD_TESTS=ON ..
     - cmake --build . --config Release
 
 test-debian:
@@ -37,7 +43,7 @@ test-debian:
     - cd build
     - ctest . 
 
-test-debian:
+test-windows:
   stage: test
   tags:
     - windows
