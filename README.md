@@ -1,6 +1,6 @@
 # cppgrad
 
-A header-only C++ micrograd ripoff.
+A not so header-only C++ micrograd ripoff.
 
 ## Possibilities
 - Same as micrograd
@@ -18,15 +18,15 @@ A header-only C++ micrograd ripoff.
 
 ## CMake options
 
-| Flag | Behavior |
-| ---- | -------- |
+| Flag             | Behavior       |
+| ---------------- | -------------- |
 | `BUILD_EXAMPLES` | Build examples |
-| `BUILD_TESTS` | Build tests |
+| `BUILD_TESTS`    | Build tests    |
 
 ## Available compile options
 
-| Flag | Behavior |
-| ---- | -------- |
+| Flag              | Behavior |
+| ----------------- | -------- |
 | `CPPGRAD_OPTION1` | Option 1 |
 | `CPPGRAD_OPTION2` | Option 2 |
 | `CPPGRAD_OPTION3` | Option 3 |

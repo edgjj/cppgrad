@@ -8,13 +8,42 @@
 
 #include <numeric>
 
-#include <cppgrad/config.hpp> // RTTI define
+#include "cppgrad/config.hpp" // RTTI define
+#include "cppgrad/device/device.hpp"
 
 namespace cppgrad {
+
+namespace impl {
+
+    std::vector<size_t> make_strides(std::vector<size_t> shape, size_t type_size)
+    {
+        std::vector<size_t> strides(shape.size());
+        size_t accum = type_size;
+
+        auto it_stride = strides.rbegin();
+
+        for (auto it = shape.rbegin(); it != shape.rend(); it++) {
+            *it_stride = accum;
+            accum *= *it;
+            it_stride++;
+        }
+
+        return strides;
+    }
+
+}
 
 class Tensor {
 public:
     using DefaultType = float;
+
+    template <typename T = DefaultType>
+    static Tensor create(std::vector<size_t>&& shape = {}, size_t alignment = alignof(T), Device* device = Device::get("cpu"))
+    {
+        size_t total_elements = std::reduce(shape.begin(), shape.end());
+
+        auto strides = impl::make_strides(std::move(shape), sizeof(T));
+    }
 
     template <typename T = DefaultType>
     T item()

@@ -13,10 +13,14 @@ string(
 
 file (GLOB 
 	CPPGRAD_HDR 
-	include/cppgrad/*.hpp)
+	include/cppgrad/*.hpp
+	include/cppgrad/device/*.hpp)
 
-set (CPPGRAD_SRC
-	src/stub.cpp)
+file (GLOB
+	CPPGRAD_SRC
+	src/*.cpp
+	src/device/*.cpp
+)
 
 add_library (cppgrad 
 	STATIC 
