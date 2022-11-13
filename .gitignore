@@ -4,6 +4,7 @@ builds/
 build-wsl/
 cmake-build-debug/
 cmake-build-release/
+.vscode/
 !CMakeLists.txt
 !*.cpp
 !*.hpp
