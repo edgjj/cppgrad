@@ -38,17 +38,29 @@ public:
     using DefaultType = float;
 
     template <typename T = DefaultType>
-    static Tensor create(std::vector<size_t>&& shape = {}, size_t alignment = alignof(T), Device* device = Device::get("cpu"))
+    static Tensor create(std::vector<size_t> shape = {},
+        T fill_value = T { 0 },
+        size_t alignment = alignof(T),
+        Device* device = Device::get("cpu"))
     {
         size_t total_elements = std::reduce(shape.begin(), shape.end());
+        auto strides = impl::make_strides(shape, sizeof(T));
 
-        auto strides = impl::make_strides(std::move(shape), sizeof(T));
+        std::align_val_t align = alignment;
+        device->allocate(total_elements * sizeof(T), align);
+
+        return Tensor(_chunk, std::move(shape), std::move(strides), align, device);
+    }
+
+    bool empty() const noexcept
+    {
+        return _shape.size() == 0;
     }
 
     template <typename T = DefaultType>
     T item()
     {
-        if (_shape.size() == 0) {
+        if (empty()) {
             throw std::range_error("Tensor is empty.");
         }
 
@@ -61,43 +73,64 @@ public:
             throw std::runtime_error("Requested type doesn't match content's type.");
         }
 #endif
-
+        // use device instead
         return *reinterpret_cast<T*>(_chunk);
     }
 
+    // this may throw at std::shared_ptr(this) anyway
     Tensor operator[](size_t index)
     {
+        if (empty()) {
+            throw std::runtime_error("Trying to access empty Tensor.");
+        }
+
         std::vector<size_t> new_shape { _shape.begin() + 1, _shape.end() };
+        std::vector<size_t> new_strides { _strides.begin() + 1, _strides.end() };
 
-        size_t reduced_shape = std::reduce(new_shape.begin(), new_shape.end());
-        void* new_chunk = static_cast<char*>(_chunk) + index * reduced_shape * _type_size;
+        std::byte* new_chunk = _chunk + index * _strides[0];
 
-        Tensor result { new_chunk, std::move(new_shape) };
+        Tensor result { new_chunk, std::move(new_shape), std::move(new_strides), _alignment, _device };
         result._base = std::shared_ptr<Tensor>(this); // shared_ptr(this) but other way
 
         return result;
+    }
+
+    ~Tensor()
+    {
+        // check if _base is empty (says that it has no parent), and has allocated _chunk
+        if (!_base && _chunk != nullptr) {
+            _device->deallocate(_chunk, _alignment);
+        }
     }
 
 private:
     /*
             private constructor for indexing
     */
-    Tensor(void* chunk, std::vector<size_t>&& shape)
+    Tensor(std::byte* chunk,
+        std::vector<size_t>&& shape,
+        std::vector<size_t>&& strides,
+        std::align_val_t alignment,
+        Device* device)
         : _chunk(chunk)
         , _shape(std::move(shape))
+        , _strides(std::move(strides))
+        , _alignment(alignment)
 #ifdef CPPGRAD_HAS_RTTI
         , _type_holder(typeid(DefaultType))
 #endif
     {
     }
 
-    void* _chunk { nullptr }; // void* cuz it can possibly located on GPU
-    uint8_t _type_size { 0 };
-    uint8_t _type_alignment { 0 };
+    std::byte* _chunk { nullptr }; // std::byte* cuz it can possibly located on GPU
+    std::align_val_t _alignment { 0 }; // we need to store that in order to successfully deallocate
 
     std::vector<size_t> _shape;
+    std::vector<size_t> _strides;
 
     std::shared_ptr<Tensor> _base; // for views - holds pointer to original chunk holder
+
+    Device* _device { nullptr };
 
 #ifdef CPPGRAD_HAS_RTTI
     std::type_index _type_holder;

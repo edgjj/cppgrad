@@ -7,9 +7,9 @@ namespace cppgrad {
 
 struct CPU : public Device {
 
-    void* allocate() override;
-    void deallocate(void* ptr) override;
-    void copy(void* from, void* to) override;
+    std::byte* allocate(std::size_t count, std::align_val_t alignment) override;
+    void deallocate(std::byte* ptr, std::align_val_t alignment) override;
+    void copy(std::byte* from, std::byte* to, std::size_t count) override;
 
     DeviceType type() override;
 };

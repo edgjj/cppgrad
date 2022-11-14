@@ -19,15 +19,15 @@ enum class DeviceType {
 
 struct Device {
 
-    virtual void* allocate() = 0;
-    virtual void deallocate(void* ptr) = 0;
-    virtual void copy(void* from, void* to) = 0;
+    virtual std::byte* allocate(std::size_t count, std::align_val_t alignment) = 0;
+    virtual void deallocate(std::byte* ptr, std::align_val_t alignment) = 0;
+    virtual void copy(std::byte* from, std::byte* to, std::size_t count) = 0;
 
     virtual DeviceType type() = 0;
 
-    static Device* get(const std::string& name)
+    static Device& get(const std::string& name)
     {
-        return impl::devices.at(name);
+        return *impl::devices.at(name);
     }
 };
 

@@ -4,17 +4,20 @@
 
 namespace cppgrad {
 
-void* CPU::allocate()
+std::byte* CPU::allocate(std::size_t count, std::align_val_t alignment)
 {
-    return nullptr;
+    void* ptr = operator new[](count * sizeof(std::byte), alignment);
+    return static_cast<std::byte*>(ptr);
 }
 
-void CPU::deallocate(void* ptr)
+void CPU::deallocate(std::byte* ptr, std::align_val_t alignment)
 {
+    operator delete[](ptr, alignment);
 }
 
-void CPU::copy(void* from, void* to)
+void CPU::copy(std::byte* from, std::byte* to, std::size_t count)
 {
+    std::memcpy(to, from, count);
 }
 
 DeviceType CPU::type()
