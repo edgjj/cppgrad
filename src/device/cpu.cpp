@@ -1,5 +1,6 @@
 #include "cppgrad/device/cpu.hpp"
 
+#include <cstring>
 #include <memory>
 
 namespace cppgrad {
