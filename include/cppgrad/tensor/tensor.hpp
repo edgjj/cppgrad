@@ -97,7 +97,8 @@ public:
             _storage->_type_holder
 #endif
         };
-        result._base = _storage; // shared_ptr(this) but other way
+
+        result._base = base_storage();
 
         return result;
     }
@@ -140,14 +141,39 @@ public:
      */
     Tensor base()
     {
-        auto actual_storage = _base ? _base : _storage;
-        return Tensor(std::move(actual_storage));
+        return Tensor(base_storage());
+    }
+
+    /**
+     * @brief Makes transposed view to Tensor.
+     *
+     * @return Tensor transposed Tensor
+     */
+    Tensor T()
+    {
+        std::vector<size_t> new_shape { shape().rbegin(), shape().rend() };
+        std::vector<size_t> new_strides { strides().rbegin(), strides().rend() };
+
+        Tensor result { _storage->_chunk,
+            std::move(new_shape),
+            std::move(new_strides),
+            _storage->_alignment,
+            _storage->_device
+#ifdef CPPGRAD_HAS_RTTI
+            ,
+            _storage->_type_holder
+#endif
+        };
+
+        result._base = base_storage();
+
+        return result;
     }
 
     ~Tensor()
     {
         // check if we have parent TensorData attached
-        auto& actual_storage = _base ? _base : _storage;
+        auto& actual_storage = base_storage();
 
         if (actual_storage.use_count() == 1) {
             actual_storage->_device
@@ -191,9 +217,20 @@ private:
     }
 
     /**
+     * @brief Utility method to get actual base TensorData storage pointer.
+     *
+     * @return std::shared_ptr<impl::TensorData>& Parent's TensorData
+     */
+    std::shared_ptr<impl::TensorData>& base_storage()
+    {
+        auto& actual_storage = _base ? _base : _storage;
+        return actual_storage;
+    }
+
+    /**
      * @brief Construct a new Tensor object from parent's TensorData.
      *
-     * @param base_storage Parent's TensorData.
+     * @param base_storage Parent's TensorData
      */
     Tensor(std::shared_ptr<impl::TensorData> base_storage)
         : _storage(std::move(base_storage))
