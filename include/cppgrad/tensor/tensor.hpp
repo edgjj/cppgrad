@@ -57,17 +57,17 @@ public:
             throw std::range_error("Tensor is empty.");
         }
 
-        if (_shape.size() > 1 || _shape[0] > 1) {
+        if (shape().size() > 1 || shape()[0] > 1) {
             throw std::range_error("Can only convert tensor of size 1 to a scalar.");
         }
 
 #ifdef CPPGRAD_HAS_RTTI
-        if (typeid(T) != _type_holder) {
+        if (std::type_index(typeid(T)) != _storage->_type_holder) {
             throw std::runtime_error("Requested type doesn't match content's type.");
         }
 #endif
         // use device instead
-        return *reinterpret_cast<T*>(_chunk);
+        return *reinterpret_cast<T*>(_storage->_chunk);
     }
 
     /**

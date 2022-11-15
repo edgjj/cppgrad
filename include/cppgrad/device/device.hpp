@@ -1,6 +1,7 @@
 #ifndef CPPGRAD_DEVICE_HPP
 #define CPPGRAD_DEVICE_HPP
 
+#include <cstddef>
 #include <new>
 
 namespace cppgrad {
