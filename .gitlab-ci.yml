@@ -41,7 +41,7 @@ test-debian:
     - build-debian
   script:
     - cd build
-    - ctest . 
+    - ctest --output-on-failure . 
 
 test-windows:
   stage: test
@@ -51,7 +51,7 @@ test-windows:
     - build-windows
   script:
     - cd build
-    - ctest . 
+    - ctest --output-on-failure . 
 
 test-macos:
   stage: test
@@ -61,4 +61,4 @@ test-macos:
     - build-macos
   script:
     - cd build
-    - ctest . 
+    - ctest --output-on-failure . 
