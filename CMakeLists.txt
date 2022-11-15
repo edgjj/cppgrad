@@ -14,7 +14,9 @@ string(
 file (GLOB 
 	CPPGRAD_HDR 
 	include/cppgrad/*.hpp
-	include/cppgrad/device/*.hpp)
+	include/cppgrad/device/*.hpp
+	include/cppgrad/tensor/*.hpp
+)
 
 file (GLOB
 	CPPGRAD_SRC

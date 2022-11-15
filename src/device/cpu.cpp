@@ -1,4 +1,5 @@
 #include "cppgrad/device/cpu.hpp"
+#include "cppgrad/device/registry.hpp"
 
 #include <cstring>
 #include <memory>
@@ -21,12 +22,6 @@ void CPU::copy(std::byte* from, std::byte* to, std::size_t count)
     std::memcpy(to, from, count);
 }
 
-DeviceType CPU::type()
-{
-    return DeviceType::CPU;
-}
-
-static CPU cpu_device;
-REGISTER_DEVICE("cpu", &cpu_device);
+REGISTER_DEVICE(CPU, "cpu");
 
 }

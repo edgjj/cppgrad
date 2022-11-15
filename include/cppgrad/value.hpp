@@ -144,8 +144,7 @@ public:
             std::nullptr_t {}
         };
 
-        auto output = Value<T>(self->val < 0 ? 0 : self->val // this should be replaced with better op
-            ,
+        auto output = Value<T>(self->val < 0 ? 0 : self->val, // this should be replaced with better op
             parents);
 
         output._backward = [self, out = output._storage]() {

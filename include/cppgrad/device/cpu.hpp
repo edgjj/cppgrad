@@ -10,9 +10,12 @@ struct CPU : public Device {
     std::byte* allocate(std::size_t count, std::align_val_t alignment) override;
     void deallocate(std::byte* ptr, std::align_val_t alignment) override;
     void copy(std::byte* from, std::byte* to, std::size_t count) override;
-
-    DeviceType type() override;
 };
+
+// dodging whole-archive
+namespace {
+    CPU cpu_device;
+}
 
 }
 
