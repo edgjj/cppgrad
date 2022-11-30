@@ -12,11 +12,6 @@ struct CPU : public Device {
     void copy(std::byte* from, std::byte* to, std::size_t count) override;
 };
 
-// dodging whole-archive; doesn't work on OSX, needs better solution
-namespace {
-    CPU cpu_device;
-}
-
 }
 
 #endif

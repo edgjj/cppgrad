@@ -8,7 +8,9 @@
 
 #include <numeric>
 
-#include "cppgrad/device/registry.hpp"
+#include "cppgrad/device/cpu/cpu.hpp"
+#include "cppgrad/device/cuda/cuda.hpp"
+
 #include "cppgrad/tensor/impl.hpp"
 
 namespace cppgrad {
@@ -17,23 +19,34 @@ class Tensor {
 public:
     using DefaultType = float;
 
-    template <typename T = DefaultType>
+    /**
+     * @brief Returns a Tensor of chosen shape, alignment and device, filled with some value.
+     *
+     * @tparam T
+     * @param shape
+     * @param fill_value
+     * @param alignment
+     * @param device
+     * @return Tensor
+     */
+
+    template <typename DeviceType, typename T = DefaultType>
     static Tensor create(std::vector<size_t> shape = {},
         T fill_value = T { 0 },
-        size_t alignment = alignof(T),
-        Device* device = DeviceRegistry::get("cpu"))
+        size_t alignment = alignof(T))
     {
         size_t total_elements = std::reduce(shape.begin(), shape.end());
         auto strides = impl::make_strides(shape, sizeof(T));
 
         std::align_val_t align { alignment };
-        auto* chunk = device->allocate(total_elements * sizeof(T), align);
+        auto* chunk = device.allocate(total_elements * sizeof(T), align);
+        auto* device = new DeviceType();
 
         return Tensor(chunk,
             std::move(shape),
             std::move(strides),
             align,
-            device
+            &device
 #ifdef CPPGRAD_HAS_RTTI
             ,
             typeid(T)
@@ -170,6 +183,45 @@ public:
         return result;
     }
 
+#ifdef CPPGRAD_HAS_CUDA
+    bool is_cuda_tensor() const
+    {
+        if (!(base_storage()->_device)) {
+            return false;
+        }
+
+        if (auto* ptr = dynamic_cast<CUDA*>(base_storage()->_device)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    Tensor cuda()
+    {
+        if (is_cuda_tensor()) {
+            return;
+        }
+
+        if (CUDA::num_devices() == 0) {
+            throw std::runtime_error("No available CUDA devices.");
+        }
+
+        auto* new_device = new CUDA();
+    }
+
+    Tensor cpu()
+    {
+        // no need in cast
+        if (!is_cuda_tensor()) {
+            return;
+        }
+
+        auto* new_device = new CPU();
+    }
+
+#endif
+
     ~Tensor()
     {
         // check if we have parent TensorData attached
@@ -178,6 +230,8 @@ public:
         if (actual_storage.use_count() == 1) {
             actual_storage->_device
                 ->deallocate(actual_storage->_chunk, actual_storage->_alignment);
+
+            delete actual_storage->_device;
         }
     }
 
@@ -222,6 +276,12 @@ private:
      * @return std::shared_ptr<impl::TensorData>& Parent's TensorData
      */
     std::shared_ptr<impl::TensorData>& base_storage()
+    {
+        auto& actual_storage = _base ? _base : _storage;
+        return actual_storage;
+    }
+
+    const std::shared_ptr<impl::TensorData>& base_storage() const
     {
         auto& actual_storage = _base ? _base : _storage;
         return actual_storage;

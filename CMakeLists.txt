@@ -11,6 +11,12 @@ string(
     IS_TOP_PROJECT
 )
 
+# to be used
+set(CPPGRAD_INTERNAL_LIBS "") 
+set(CPPGRAD_CUDA ON CACHE BOOL "Build CUDA")
+
+include (cmake/build_extras.cmake)
+
 file (GLOB 
 	CPPGRAD_HDR 
 	include/cppgrad/*.hpp
@@ -18,10 +24,16 @@ file (GLOB
 	include/cppgrad/tensor/*.hpp
 )
 
+set(CPPGRAD_DEVICE_INCLUDES 
+	include/cppgrad/device/cpu/cpu.hpp
+	include/cppgrad/device/cuda/cuda.hpp
+)
+
+list(APPEND CPPGRAD_HDR ${CPPGRAD_DEVICE_INCLUDES})
+
 file (GLOB
 	CPPGRAD_SRC
 	src/*.cpp
-	src/device/*.cpp
 )
 
 add_library (cppgrad 
@@ -31,7 +43,7 @@ add_library (cppgrad
 )
 
 target_include_directories(cppgrad PUBLIC include/)
-target_link_libraries(cppgrad PRIVATE)
+target_link_libraries(cppgrad PRIVATE ${CPPGRAD_INTERNAL_LIBS})
 
 set_target_properties(cppgrad
     PROPERTIES LINKER_LANGUAGE CXX
