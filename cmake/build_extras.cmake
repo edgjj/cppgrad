@@ -44,12 +44,12 @@ if (CPPGRAD_CUDA)
     # 80 - Ampere (A100)
     # 86 - Ampere (GeForce RTX 3090, RTX 3080, RTX 3070, RTX 3060 Ti, RTX 3060, RTX 3050 Ti	RTX A6000, A40)
     set_property(TARGET cppgrad_cuda_backend PROPERTY CUDA_ARCHITECTURES 61 70 75 80 86) # and possibly 86
+
+    list(APPEND 
+        CPPGRAD_INTERNAL_LIBS 
+        cppgrad_cuda_backend)
 endif()
 
-list(APPEND 
-    CPPGRAD_INTERNAL_LIBS 
-    cppgrad_cpu_backend
-    cppgrad_cuda_backend)
 
 if (CPPGRAD_MPI)
     if(MSVC)
