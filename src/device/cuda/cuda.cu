@@ -22,12 +22,12 @@ void CUDA::copy(std::byte* from, std::byte* to, std::size_t count)
     cudaMemcpy(to, from, count, cudaMemcpyKind::cudaMemcpyDeviceToDevice);
 }
 
-void CUDA::copyFromHost(std::byte* from, std::byte* to, std::size_t count)
+void CUDA::copy_from_host(std::byte* from, std::byte* to, std::size_t count)
 {
     cudaMemcpy(to, from, count, cudaMemcpyKind::cudaMemcpyHostToDevice);
 }
 
-void CUDA::copyToHost(std::byte* from, std::byte* to, std::size_t count)
+void CUDA::copy_to_host(std::byte* from, std::byte* to, std::size_t count)
 {
     cudaMemcpy(to, from, count, cudaMemcpyKind::cudaMemcpyDeviceToHost);
 }

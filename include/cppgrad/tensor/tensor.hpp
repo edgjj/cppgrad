@@ -19,6 +19,9 @@ class Tensor {
 public:
     using DefaultType = float;
 
+    Tensor(const Tensor&) = default;
+    Tensor(Tensor&&) = default;
+
     /**
      * @brief Returns a Tensor of chosen shape, alignment and device, filled with some value.
      *
@@ -30,7 +33,7 @@ public:
      * @return Tensor
      */
 
-    template <typename DeviceType, typename T = DefaultType>
+    template <typename T = DefaultType, typename DeviceType = CPU>
     static Tensor create(std::vector<size_t> shape = {},
         T fill_value = T { 0 },
         size_t alignment = alignof(T))
@@ -39,14 +42,15 @@ public:
         auto strides = impl::make_strides(shape, sizeof(T));
 
         std::align_val_t align { alignment };
-        auto* chunk = device.allocate(total_elements * sizeof(T), align);
+
         auto* device = new DeviceType();
+        auto* chunk = device->allocate(total_elements * sizeof(T), align);
 
         return Tensor(chunk,
             std::move(shape),
             std::move(strides),
             align,
-            &device
+            device
 #ifdef CPPGRAD_HAS_RTTI
             ,
             typeid(T)
@@ -200,7 +204,7 @@ public:
     Tensor cuda()
     {
         if (is_cuda_tensor()) {
-            return;
+            return *this;
         }
 
         if (CUDA::num_devices() == 0) {
@@ -214,7 +218,7 @@ public:
     {
         // no need in cast
         if (!is_cuda_tensor()) {
-            return;
+            return *this;
         }
 
         auto* new_device = new CPU();
