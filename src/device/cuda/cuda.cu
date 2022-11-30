@@ -29,6 +29,16 @@ void CUDA::copy_to_host(std::byte* from, std::byte* to, std::size_t count)
     cudaMemcpy(to, from, count, cudaMemcpyKind::cudaMemcpyDeviceToHost);
 }
 
+void CUDA::assign(std::byte* pos, std::byte* value, DType type)
+{
+    // copy(value, pos, )
+}
+
+void CUDA::fill(std::byte* pos, std::byte* value, DType type, std::size_t count)
+{
+    // we need a fillKernel there
+}
+
 int CUDA::num_devices()
 {
     int nDevices = 0;

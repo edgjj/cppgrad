@@ -19,8 +19,20 @@ class Tensor {
 public:
     using DefaultType = float;
 
+    // default constructors / assignments
     Tensor(const Tensor&) = default;
     Tensor(Tensor&&) = default;
+
+    // atm these are just mock; actually we need to make some data copying
+    Tensor& operator=(const Tensor&) = default;
+    Tensor& operator=(Tensor&&) = default;
+
+    template <typename T>
+    Tensor(T value)
+    {
+        // this is kinda weird to pass index and then cast it back to type
+        *this = create<rtype_v<T>>({ 1 }, value);
+    }
 
     /**
      * @brief Returns a Tensor of chosen shape, alignment and device, filled with some value.
@@ -33,26 +45,38 @@ public:
      * @return Tensor
      */
 
-    template <typename T = DefaultType, typename DeviceType = CPU>
+    template <DType DataType, typename DeviceType = CPU>
     static Tensor create(std::vector<size_t> shape = {},
-        T fill_value = T { 0 },
-        size_t alignment = alignof(T))
+        dtype_t<DataType> fill_value = dtype_t<DataType> { 0 },
+        size_t alignment = alignof(dtype_t<DataType>))
     {
+        auto type_size = sizeof(dtype_t<DataType>);
+
         size_t total_elements = std::reduce(shape.begin(), shape.end());
-        auto strides = impl::make_strides(shape, sizeof(T));
+        auto strides = impl::make_strides(shape, type_size);
 
         std::align_val_t align { alignment };
 
-        auto* device = new DeviceType();
-        auto* chunk = device->allocate(total_elements * sizeof(T), align);
+        Device* device = new DeviceType();
+        auto* chunk = device->allocate(total_elements * type_size, align);
 
-        return Tensor(chunk,
+        auto result = Tensor(chunk,
             std::move(shape),
             std::move(strides),
             align,
             device,
-            impl::Type<T>::id
-        );
+            DataType);
+
+        result.fill(fill_value, total_elements);
+
+        return result;
+    }
+
+    template <typename T>
+    auto fill(T value, size_t count)
+    {
+        auto* byte_ptr = reinterpret_cast<std::byte*>(&value);
+        _storage->_device->fill(data(), byte_ptr, dtype(), count);
     }
 
     /**
@@ -64,8 +88,8 @@ public:
      * @tparam T type to query
      * @return T scalar
      */
-    template <typename T = DefaultType>
-    T item()
+    template <DType DataType>
+    auto item()
     {
         if (empty()) {
             throw std::range_error("Tensor is empty.");
@@ -75,12 +99,14 @@ public:
             throw std::range_error("Can only convert tensor of size 1 to a scalar.");
         }
 
-        if (impl::Type<T>::id != _storage->_type_id) {
+        if (DataType != _storage->_type_id) {
             throw std::runtime_error("Requested type doesn't match content's type.");
         }
 
+        using ResultType = dtype_t<DataType>;
+
         // use device instead
-        return *reinterpret_cast<T*>(_storage->_chunk);
+        return *reinterpret_cast<ResultType*>(_storage->_chunk);
     }
 
     /**
@@ -110,6 +136,28 @@ public:
         result._base = base_storage();
 
         return result;
+    }
+
+    /**
+     * @brief Retrieves current data type stored in Tensor.
+     *
+     * @return DType type index
+     */
+    DType dtype() const
+    {
+        return base_storage()->_type_id;
+    }
+
+    /**
+     * @brief Gets raw pointer to Tensor data.
+     *
+     * You must only use it if there's a REALLY good reason to do so.
+     *
+     * @return std::byte* raw data pointer
+     */
+    std::byte* data()
+    {
+        return _storage->_chunk;
     }
 
     /**
@@ -199,7 +247,7 @@ public:
             throw std::runtime_error("No available CUDA devices.");
         }
 
-        auto* new_device = new CUDA();
+        // auto* new_device = new CUDA();
     }
 
     Tensor cpu()
@@ -209,7 +257,7 @@ public:
             return *this;
         }
 
-        auto* new_device = new CPU();
+        // auto* new_device = new CPU();
     }
 
 #endif
@@ -243,7 +291,7 @@ private:
         std::vector<size_t>&& strides,
         std::align_val_t alignment,
         Device* device,
-        impl::cppgrad_id type)
+        DType type)
     {
         _storage = std::make_shared<impl::TensorData>(
             chunk,

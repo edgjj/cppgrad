@@ -11,9 +11,12 @@ string(
     IS_TOP_PROJECT
 )
 
+set(CPPGRAD_CUDA ON CACHE BOOL "Build with CUDA backend enabled")
+set(CPPGRAD_MPI OFF CACHE BOOL "Build with distributed MPI compute capatibilities")
+
 # to be used
 set(CPPGRAD_INTERNAL_LIBS "") 
-set(CPPGRAD_CUDA ON CACHE BOOL "Build CUDA")
+
 
 include (cmake/build_extras.cmake)
 

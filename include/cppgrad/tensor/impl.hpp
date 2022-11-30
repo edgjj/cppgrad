@@ -46,7 +46,7 @@ namespace impl {
             std::vector<size_t>&& shape,
             std::vector<size_t>&& strides,
             Device* device,
-            cppgrad_id type)
+            DType type)
             : _chunk(chunk)
             , _alignment(alignment)
             , _shape(std::move(shape))
@@ -81,7 +81,7 @@ namespace impl {
         /**
          * @brief ID of current type stored in Tensor.
          */
-        unsigned _type_id { 0xFFFF };
+        DType _type_id { undefined };
     };
 
 }
