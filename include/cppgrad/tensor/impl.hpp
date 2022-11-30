@@ -4,11 +4,7 @@
 #include <new> // std::align_val_t
 #include <vector> // std::vector
 
-#include "cppgrad/config.hpp" // RTTI define
-
-#ifdef CPPGRAD_HAS_RTTI
-#include <typeindex> // std::type_index
-#endif
+#include "cppgrad/tensor/typing.hpp"
 
 namespace cppgrad {
 
@@ -49,20 +45,14 @@ namespace impl {
             std::align_val_t alignment,
             std::vector<size_t>&& shape,
             std::vector<size_t>&& strides,
-            Device* device
-#ifdef CPPGRAD_HAS_RTTI
-            ,
-            std::type_index type
-#endif
-            )
+            Device* device,
+            cppgrad_id type)
             : _chunk(chunk)
             , _alignment(alignment)
             , _shape(std::move(shape))
             , _strides(std::move(strides))
             , _device(device)
-#ifdef CPPGRAD_HAS_RTTI
-            , _type_holder(type)
-#endif
+            , _type_id(type)
         {
         }
 
@@ -89,11 +79,9 @@ namespace impl {
         Device* _device { nullptr };
 
         /**
-         * @brief Current type stored in Tensor. Disabled if no RTTI enabled.
+         * @brief ID of current type stored in Tensor.
          */
-#ifdef CPPGRAD_HAS_RTTI
-        std::type_index _type_holder;
-#endif
+        unsigned _type_id { 0xFFFF };
     };
 
 }

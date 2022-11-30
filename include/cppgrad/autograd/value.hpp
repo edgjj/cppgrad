@@ -7,7 +7,7 @@
 #include <utility> // std::move
 #include <vector> // std::vector
 
-#include "misc_ops.hpp" // plus, minus, etc overloads
+#include "cppgrad/autograd/misc_ops.hpp" // plus, minus, etc overloads
 
 namespace cppgrad {
 

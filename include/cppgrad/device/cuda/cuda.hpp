@@ -14,7 +14,7 @@ struct CUDA : public Device {
     void copy_from_host(std::byte* from, std::byte* to, std::size_t count);
     void copy_to_host(std::byte* from, std::byte* to, std::size_t count);
 
-    static size_t num_devices();
+    static int num_devices();
 };
 
 }

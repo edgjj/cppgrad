@@ -5,7 +5,8 @@
 #include <cppgrad/device/cuda/cuda.hpp>
 
 #include <cppgrad/nn.hpp>
+
+#include <cppgrad/autograd/value.hpp>
 #include <cppgrad/tensor/tensor.hpp>
-#include <cppgrad/value.hpp>
 
 #endif

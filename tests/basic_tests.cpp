@@ -1,8 +1,6 @@
 #include <cppgrad/cppgrad.hpp>
 #include <gtest/gtest.h>
 
-#include "nn_module_tests.hpp"
-
 using namespace cppgrad;
 
 TEST(MicrogradInherited, SanityTest)

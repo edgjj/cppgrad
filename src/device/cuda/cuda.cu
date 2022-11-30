@@ -1,8 +1,5 @@
 #include "cppgrad/device/cuda/cuda.hpp"
 
-// #include <cstring>
-// #include <memory>
-
 namespace cppgrad {
 
 std::byte* CUDA::allocate(std::size_t count, std::align_val_t alignment)
@@ -30,6 +27,14 @@ void CUDA::copy_from_host(std::byte* from, std::byte* to, std::size_t count)
 void CUDA::copy_to_host(std::byte* from, std::byte* to, std::size_t count)
 {
     cudaMemcpy(to, from, count, cudaMemcpyKind::cudaMemcpyDeviceToHost);
+}
+
+int CUDA::num_devices()
+{
+    int nDevices = 0;
+    cudaGetDeviceCount(&nDevices);
+
+    return nDevices;
 }
 
 }

@@ -50,11 +50,8 @@ public:
             std::move(shape),
             std::move(strides),
             align,
-            device
-#ifdef CPPGRAD_HAS_RTTI
-            ,
-            typeid(T)
-#endif
+            device,
+            impl::Type<T>::id
         );
     }
 
@@ -78,11 +75,10 @@ public:
             throw std::range_error("Can only convert tensor of size 1 to a scalar.");
         }
 
-#ifdef CPPGRAD_HAS_RTTI
-        if (std::type_index(typeid(T)) != _storage->_type_holder) {
+        if (impl::Type<T>::id != _storage->_type_id) {
             throw std::runtime_error("Requested type doesn't match content's type.");
         }
-#endif
+
         // use device instead
         return *reinterpret_cast<T*>(_storage->_chunk);
     }
@@ -108,12 +104,8 @@ public:
             std::move(new_shape),
             std::move(new_strides),
             _storage->_alignment,
-            _storage->_device
-#ifdef CPPGRAD_HAS_RTTI
-            ,
-            _storage->_type_holder
-#endif
-        };
+            _storage->_device,
+            _storage->_type_id };
 
         result._base = base_storage();
 
@@ -175,12 +167,8 @@ public:
             std::move(new_shape),
             std::move(new_strides),
             _storage->_alignment,
-            _storage->_device
-#ifdef CPPGRAD_HAS_RTTI
-            ,
-            _storage->_type_holder
-#endif
-        };
+            _storage->_device,
+            _storage->_type_id };
 
         result._base = base_storage();
 
@@ -254,24 +242,16 @@ private:
         std::vector<size_t>&& shape,
         std::vector<size_t>&& strides,
         std::align_val_t alignment,
-        Device* device
-#ifdef CPPGRAD_HAS_RTTI
-        ,
-        std::type_index type
-#endif
-    )
+        Device* device,
+        impl::cppgrad_id type)
     {
         _storage = std::make_shared<impl::TensorData>(
             chunk,
             alignment,
             std::move(shape),
             std::move(strides),
-            device
-#ifdef CPPGRAD_HAS_RTTI
-            ,
-            type
-#endif
-        );
+            device,
+            type);
     }
 
     /**

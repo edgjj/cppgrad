@@ -20,6 +20,7 @@ include (cmake/build_extras.cmake)
 file (GLOB 
 	CPPGRAD_HDR 
 	include/cppgrad/*.hpp
+	include/cppgrad/autograd/*.hpp
 	include/cppgrad/device/*.hpp
 	include/cppgrad/tensor/*.hpp
 )
