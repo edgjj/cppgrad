@@ -34,7 +34,8 @@ static void fill_internal(std::byte* pos, std::byte* value, std::size_t count)
     auto* ptr = reinterpret_cast<T*>(pos);
     auto fill_value = *reinterpret_cast<T*>(value);
 
-    std::fill_n(ptr, fill_value, count);
+    // std::fill_n(OutputIt, Size, T& value)
+    std::fill_n(ptr, count, fill_value);
 }
 
 void CPU::fill(std::byte* pos, std::byte* value, DType type, std::size_t count)
