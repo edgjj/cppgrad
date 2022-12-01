@@ -19,6 +19,8 @@ struct Device {
     virtual void fill(std::byte* pos, std::byte* value, DType type, std::size_t count) = 0;
 
     virtual std::string_view type() = 0;
+
+    virtual ~Device() = default;
 };
 
 }
