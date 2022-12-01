@@ -2,6 +2,7 @@
 #define CPPGRAD_TENSOR_TYPES_HPP
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <tuple>
 #include <utility>
