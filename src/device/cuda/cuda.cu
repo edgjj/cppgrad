@@ -2,10 +2,28 @@
 
 namespace cppgrad {
 
-std::byte* CUDA::allocate(std::size_t count, std::align_val_t alignment)
+std::byte* CUDA::allocate(std::size_t count, std::align_val_t alignment, std::string& err)
 {
     std::byte* ptr;
-    cudaMalloc(&ptr, count);
+
+    auto result = cudaMalloc(&ptr, count);
+    if (result != cudaSuccess) {
+        // retrieve available mem to print out later
+        size_t free_mem = 0, total_mem = 0;
+        cudaMemGetInfo(&free_mem, &total_mem);
+
+        err += "[ ";
+        err += type();
+        err += " ]";
+        err += "Device out of memory. Tried to allocate: ";
+        err += std::to_string(count);
+        err += " bytes. ";
+        err += "Available memory: ";
+        err += std::to_string(free_mem);
+        err += " bytes.";
+        return nullptr;
+    }
+
     return ptr;
 }
 
@@ -37,6 +55,11 @@ void CUDA::assign(std::byte* pos, std::byte* value, DType type)
 void CUDA::fill(std::byte* pos, std::byte* value, DType type, std::size_t count)
 {
     // we need a fillKernel there
+}
+
+std::string_view CUDA::type()
+{
+    return "cuda"; // include device number there later like cuda:X
 }
 
 int CUDA::num_devices()

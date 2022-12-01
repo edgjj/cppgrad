@@ -15,6 +15,9 @@
 
 namespace cppgrad {
 
+/*
+    may need a .contiguous() type thing to make transposed matrices flat
+*/
 class Tensor {
 public:
     using DefaultType = float;
@@ -26,6 +29,12 @@ public:
     // atm these are just mock; actually we need to make some data copying
     Tensor& operator=(const Tensor&) = default;
     Tensor& operator=(Tensor&&) = default;
+
+    // this ensures that _storage won't be empty
+    Tensor()
+        : Tensor(0)
+    {
+    }
 
     template <typename T>
     Tensor(T value)
@@ -58,7 +67,14 @@ public:
         std::align_val_t align { alignment };
 
         Device* device = new DeviceType();
-        auto* chunk = device->allocate(total_elements * type_size, align);
+
+        // cool error handling
+        std::string error;
+        auto* chunk = device->allocate(total_elements * type_size, align, error);
+
+        if (chunk == nullptr) {
+            throw std::runtime_error(error);
+        }
 
         auto result = Tensor(chunk,
             std::move(shape),
@@ -105,7 +121,18 @@ public:
 
         using ResultType = dtype_t<DataType>;
 
-        // use device instead
+#ifdef CPPGRAD_HAS_CUDA
+        // we need transfer data from CUDA device first
+        if (is_cuda_tensor()) {
+            auto* cuda_device = dynamic_cast<CUDA*>(_storage->_device);
+            dtype_t<DataType> data { 0 };
+
+            cuda_device->copy_to_host(_storage->_chunk, reinterpret_cast<std::byte*>(&data), sizeof(data));
+
+            return data;
+        }
+#endif
+
         return *reinterpret_cast<ResultType*>(_storage->_chunk);
     }
 
@@ -226,10 +253,7 @@ public:
 #ifdef CPPGRAD_HAS_CUDA
     bool is_cuda_tensor() const
     {
-        if (!(base_storage()->_device)) {
-            return false;
-        }
-
+        // we assume that there's always device attached to Tensor
         if (auto* ptr = dynamic_cast<CUDA*>(base_storage()->_device)) {
             return true;
         }
@@ -239,15 +263,10 @@ public:
 
     Tensor cuda()
     {
-        if (is_cuda_tensor()) {
+        // safe pass if no CUDA devices
+        if (is_cuda_tensor() || CUDA::num_devices() == 0) {
             return *this;
         }
-
-        if (CUDA::num_devices() == 0) {
-            throw std::runtime_error("No available CUDA devices.");
-        }
-
-        // auto* new_device = new CUDA();
     }
 
     Tensor cpu()
@@ -260,6 +279,22 @@ public:
         // auto* new_device = new CPU();
     }
 
+#else
+    // let it be just no-op if CUDA capatibilities are not built
+    bool is_cuda_tensor() const
+    {
+        return false;
+    }
+
+    Tensor cpu()
+    {
+        return *this;
+    }
+
+    Tensor cuda()
+    {
+        return *this;
+    }
 #endif
 
     ~Tensor()
@@ -332,14 +367,6 @@ private:
     std::shared_ptr<impl::TensorData> _storage;
     // duplicate for views
     std::shared_ptr<impl::TensorData> _base;
-
-    /*
-        we do need to make following things:
-                per-dimension strides (basically a step for which we should advance for chosen dimension)
-                stride-based indexing
-
-        ... PROFIT!
-    */
 };
 }
 

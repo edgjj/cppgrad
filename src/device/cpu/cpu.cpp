@@ -4,13 +4,23 @@
 #include <cstring>
 #include <memory>
 
-
 namespace cppgrad {
 
-std::byte* CPU::allocate(std::size_t count, std::align_val_t alignment)
+std::byte* CPU::allocate(std::size_t count, std::align_val_t alignment, std::string& err)
 {
-    void* ptr = operator new[](count, alignment);
-    return static_cast<std::byte*>(ptr);
+    try {
+        void* ptr = operator new[](count, alignment);
+        return static_cast<std::byte*>(ptr);
+    } catch (std::bad_alloc&) {
+        // this is ugly
+        err += "[ ";
+        err += type();
+        err += " ]";
+        err += "Device out of memory. Tried to allocate: ";
+        err += std::to_string(count);
+        err += " bytes";
+        return nullptr;
+    }
 }
 
 void CPU::deallocate(std::byte* ptr, std::align_val_t alignment)
@@ -40,26 +50,12 @@ static void fill_internal(std::byte* pos, std::byte* value, std::size_t count)
 
 void CPU::fill(std::byte* pos, std::byte* value, DType type, std::size_t count)
 {
-    switch (type) {
-    case u32:
-        fill_internal<dtype_t<u32>>(pos, value, count);
-        break;
-    case u64:
-        fill_internal<dtype_t<u32>>(pos, value, count);
-        break;
-    case i32:
-        fill_internal<dtype_t<u32>>(pos, value, count);
-        break;
-    case i64:
-        fill_internal<dtype_t<u32>>(pos, value, count);
-        break;
-    case f32:
-        fill_internal<dtype_t<u32>>(pos, value, count);
-        break;
-    case f64:
-        fill_internal<dtype_t<u32>>(pos, value, count);
-        break;
-    }
+    FOREACH_TYPE(type, fill_internal, pos, value, count);
+}
+
+std::string_view CPU::type()
+{
+    return "cpu";
 }
 
 }

@@ -27,8 +27,14 @@ TEST(TensorBasicTests, ViewTensor)
     ASSERT_EQ(new_tensor.strides(), strides);
 }
 
-TEST(TensorBasicTest, AssignTensor)
+TEST(TensorBasicTests, AssignTensorScalar)
 {
     Tensor t = 10;
     ASSERT_EQ(t.item<i32>(), 10);
+}
+
+TEST(TensorBasicTests, AssignTensorVector)
+{
+    // Tensor t = { 0, 0, 0, 0, 0, 0 };
+    // ASSERT_EQ(t[0].item<i32>(), 150);
 }

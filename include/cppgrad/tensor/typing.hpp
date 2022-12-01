@@ -70,6 +70,29 @@ constexpr size_t type_size(DType type)
     return sizes[type];
 }
 
+// this should be replaced with better alternative
+#define FOREACH_TYPE(type, fn, ...)          \
+    switch (type) {                          \
+    case u32:                                \
+        fn<dtype_t<u32>>(pos, value, count); \
+        break;                               \
+    case u64:                                \
+        fn<dtype_t<u64>>(pos, value, count); \
+        break;                               \
+    case i32:                                \
+        fn<dtype_t<i32>>(pos, value, count); \
+        break;                               \
+    case i64:                                \
+        fn<dtype_t<i64>>(pos, value, count); \
+        break;                               \
+    case f32:                                \
+        fn<dtype_t<f32>>(pos, value, count); \
+        break;                               \
+    case f64:                                \
+        fn<dtype_t<f64>>(pos, value, count); \
+        break;                               \
+    }
+
 }
 
 #endif
