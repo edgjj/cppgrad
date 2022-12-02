@@ -72,6 +72,17 @@ public:
         return result;
     }
 
+    /**
+     * @brief Creates Tensor using memory blob with chosen shape.
+     * Note: this function takes ownership of blob's data.
+     *
+     * @tparam DataType
+     * @tparam DeviceType
+     * @param blob
+     * @param shape
+     * @param alignment
+     * @return Tensor
+     */
     template <DType DataType, typename DeviceType = CPU>
     static Tensor from_blob(dtype_t<DataType>* blob,
         std::vector<size_t> shape = {},
@@ -125,13 +136,7 @@ public:
 
         Device* device = new DeviceType();
 
-        // cool error handling
-        std::string error;
-        auto* chunk = device->allocate(total_elements * type_size, align, error);
-
-        if (chunk == nullptr) {
-            throw std::runtime_error(error);
-        }
+        auto* chunk = device->allocate(total_elements * type_size, align);
 
         return Tensor(chunk,
             std::move(shape),

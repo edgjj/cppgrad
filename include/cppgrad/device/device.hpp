@@ -12,7 +12,7 @@ namespace cppgrad {
 
 struct Device {
 
-    virtual std::byte* allocate(std::size_t count, std::align_val_t alignment, std::string& err) = 0;
+    virtual std::byte* allocate(std::size_t count, std::align_val_t alignment) = 0;
     virtual void deallocate(std::byte* ptr, std::align_val_t alignment) = 0;
     virtual void copy(std::byte* from, std::byte* to, std::size_t count) = 0;
 

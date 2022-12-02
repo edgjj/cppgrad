@@ -1,8 +1,10 @@
 #include "cppgrad/device/cpu/cpu.hpp"
+#include "cppgrad/exceptions/out_of_memory.hpp"
 
 #include <algorithm>
 #include <cstring>
 #include <memory>
+#include <stdexcept>
 
 namespace cppgrad {
 
@@ -19,20 +21,13 @@ namespace impl {
     }
 }
 
-std::byte* CPU::allocate(std::size_t count, std::align_val_t alignment, std::string& err)
+std::byte* CPU::allocate(std::size_t count, std::align_val_t alignment)
 {
     try {
         void* ptr = operator new[](count, alignment);
         return static_cast<std::byte*>(ptr);
     } catch (std::bad_alloc&) {
-        // this is ugly
-        err += "[ ";
-        err += type();
-        err += " ]";
-        err += "Device out of memory. Tried to allocate: ";
-        err += std::to_string(count);
-        err += " bytes";
-        return nullptr;
+        throw exceptions::OutOfMemoryException(type(), count);
     }
 }
 

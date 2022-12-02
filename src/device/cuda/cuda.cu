@@ -1,28 +1,22 @@
 #include "cppgrad/device/cuda/cuda.hpp"
 #include "cppgrad/device/cuda/fill_kernel.cuh"
+#include "cppgrad/exceptions/out_of_memory.hpp"
+#include <stdexcept>
 
 namespace cppgrad {
 
-std::byte* CUDA::allocate(std::size_t count, std::align_val_t alignment, std::string& err)
+std::byte* CUDA::allocate(std::size_t count, std::align_val_t alignment)
 {
     std::byte* ptr;
 
     auto result = cudaMalloc(&ptr, count);
+
     if (result != cudaSuccess) {
         // retrieve available mem to print out later
         size_t free_mem = 0, total_mem = 0;
         cudaMemGetInfo(&free_mem, &total_mem);
 
-        err += "[ ";
-        err += type();
-        err += " ]";
-        err += "Device out of memory. Tried to allocate: ";
-        err += std::to_string(count);
-        err += " bytes. ";
-        err += "Available memory: ";
-        err += std::to_string(free_mem);
-        err += " bytes.";
-        return nullptr;
+        throw exceptions::OutOfMemoryException(type(), count, free_mem);
     }
 
     return ptr;
