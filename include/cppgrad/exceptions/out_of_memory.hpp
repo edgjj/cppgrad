@@ -28,18 +28,19 @@ namespace impl {
     }
 }
 
-struct OutOfMemoryException : std::runtime_error {
-    // this is ugly
-    OutOfMemoryException(std::string_view device_type, size_t nbytes_failed)
+struct OutOfMemoryError : std::runtime_error {
+
+    OutOfMemoryError(std::string_view device_type, size_t nbytes_failed)
         : std::runtime_error(impl::make_oom_message(device_type, nbytes_failed))
     {
     }
 
-    OutOfMemoryException(std::string_view device_type, size_t nbytes_failed, size_t nbytes_available)
+    OutOfMemoryError(std::string_view device_type, size_t nbytes_failed, size_t nbytes_available)
         : std::runtime_error(impl::make_oom_message(device_type, nbytes_failed, nbytes_available))
     {
     }
 };
+
 }
 
 #endif

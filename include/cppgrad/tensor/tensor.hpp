@@ -2,7 +2,6 @@
 #define CPPGRAD_TENSOR_HPP
 
 #include <memory> // std::shared_ptr
-#include <stdexcept> // std::runtime_error
 #include <typeindex> // std::type_index
 #include <vector> // std::vector
 
@@ -12,6 +11,11 @@
 #include "cppgrad/device/cuda/cuda.hpp"
 
 #include "cppgrad/tensor/impl.hpp"
+
+// exceptions
+#include "cppgrad/exceptions/generic_error.hpp"
+#include "cppgrad/exceptions/index_error.hpp"
+#include "cppgrad/exceptions/type_error.hpp"
 
 namespace cppgrad {
 
@@ -89,7 +93,7 @@ public:
         size_t alignment = alignof(dtype_t<DataType>))
     {
         if (blob == nullptr) {
-            throw std::runtime_error("Caught nullptr blob.");
+            throw exceptions::GenericError("Caught nullptr blob.");
         }
 
         auto result = create_dirty<DeviceType>(shape, DataType, alignment);
@@ -157,7 +161,7 @@ public:
     void fill(T value, size_t count)
     {
         if (rtype_v<T> != _storage->_type_id) {
-            throw std::runtime_error("Requested type doesn't match Tensor's type.");
+            throw exceptions::TypeError(rtype_v<T>, _storage->_type_id);
         }
 
         auto* byte_ptr = reinterpret_cast<std::byte*>(&value);
@@ -177,15 +181,15 @@ public:
     auto item()
     {
         if (empty()) {
-            throw std::range_error("Tensor is empty.");
+            throw exceptions::IndexError();
         }
 
         if (shape().size() > 1 || shape()[0] > 1) {
-            throw std::range_error("Can only convert tensor of size 1 to a scalar.");
+            throw exceptions::GenericError("Can only convert tensor of size 1 to a scalar.");
         }
 
         if (DataType != _storage->_type_id) {
-            throw std::runtime_error("Requested type doesn't match content's type.");
+            throw exceptions::TypeError(DataType, _storage->_type_id);
         }
 
         using ResultType = dtype_t<DataType>;
@@ -214,7 +218,11 @@ public:
     Tensor operator[](size_t index)
     {
         if (empty()) {
-            throw std::runtime_error("Trying to access empty Tensor.");
+            throw exceptions::IndexError();
+        }
+
+        if (index >= shape()[0]) {
+            throw exceptions::IndexError(index, shape()[0]);
         }
 
         std::vector<size_t> new_shape { shape().begin() + 1, shape().end() };
@@ -269,7 +277,8 @@ public:
      */
     bool empty() const noexcept
     {
-        return _storage->_shape.size() == 0;
+        // right won't be evaluated if left was
+        return _storage->_shape.size() == 0 || _storage->_shape[0] == 0;
     }
 
     size_t numel() const noexcept

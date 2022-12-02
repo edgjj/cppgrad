@@ -16,7 +16,7 @@ std::byte* CUDA::allocate(std::size_t count, std::align_val_t alignment)
         size_t free_mem = 0, total_mem = 0;
         cudaMemGetInfo(&free_mem, &total_mem);
 
-        throw exceptions::OutOfMemoryException(type(), count, free_mem);
+        throw exceptions::OutOfMemoryError(type(), count, free_mem);
     }
 
     return ptr;

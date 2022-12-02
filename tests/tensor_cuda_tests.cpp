@@ -1,14 +1,12 @@
 #include <cppgrad/cppgrad.hpp>
+#include <cppgrad/exceptions/out_of_memory.hpp>
 #include <gtest/gtest.h>
 
 using namespace cppgrad;
 
 // simply build to nothing if there's no CUDA support
-#ifdef CPPGRAD_HAS_CUDA
-#include <cppgrad/cppgrad.hpp>
-#include <gtest/gtest.h>
 
-using namespace cppgrad;
+#ifdef CPPGRAD_HAS_CUDA
 
 TEST(TensorCUDATests, InitTensor)
 {
@@ -53,5 +51,11 @@ TEST(TensorCUDATests, AssignTensorVector)
     ASSERT_EQ(t[3].item<i32>(), 999);
     ASSERT_EQ(t[4].item<i32>(), 32);
     ASSERT_EQ(t[5].item<i32>(), 66);
+}
+
+TEST(TensorCUDATests, OOMTest)
+{
+    size_t size = (size_t)1 << 48;
+    ASSERT_THROW(Tensor::create<i64>({ size }), exceptions::OutOfMemoryError);
 }
 #endif

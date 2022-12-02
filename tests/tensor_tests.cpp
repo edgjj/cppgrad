@@ -1,4 +1,5 @@
 #include <cppgrad/cppgrad.hpp>
+#include <cppgrad/exceptions/out_of_memory.hpp>
 #include <gtest/gtest.h>
 
 using namespace cppgrad;
@@ -43,6 +44,29 @@ TEST(TensorBasicTests, AssignTensorVector)
     ASSERT_EQ(t[3].item<i32>(), 999);
     ASSERT_EQ(t[4].item<i32>(), 32);
     ASSERT_EQ(t[5].item<i32>(), 66);
+}
+
+TEST(TensorBasicTests, OOMTest)
+{
+    // try to allocate 2 ^ 48 elements of i64
+    // ~= 281.47 TBytes
+    size_t size = (size_t)1 << 48;
+    ASSERT_THROW(Tensor::create<i64>({ size }), exceptions::OutOfMemoryError);
+}
+
+TEST(TensorBasicTests, TypeErrorTest)
+{
+    auto tensor = Tensor::create<f32>({ 128, 8 });
+    ASSERT_THROW(tensor[0][0].item<i32>(), exceptions::TypeError);
+}
+
+TEST(TensorBasicTests, IndexErrorTest)
+{
+    auto tensor = Tensor::create<f32>({ 128, 8 });
+    ASSERT_THROW(tensor[129], exceptions::IndexError);
+
+    auto empty_tensor = Tensor::create<i32>({ 0 });
+    ASSERT_THROW(empty_tensor[0], exceptions::IndexError);
 }
 
 TEST(TensorBasicTests, AssignTensorMultidimensional)

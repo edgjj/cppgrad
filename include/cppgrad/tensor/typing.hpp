@@ -71,6 +71,12 @@ constexpr size_t dtype_size(DType type)
     return sizes[type];
 }
 
+constexpr const char* dtype_name(DType type)
+{
+    constexpr std::array<const char*, 7> names = { "u32", "u64", "i32", "i64", "f32", "f64", "undef" };
+    return names[type];
+}
+
 // this should be replaced with better alternative
 #define FOREACH_TYPE(type, fn, ...)          \
     switch (type) {                          \

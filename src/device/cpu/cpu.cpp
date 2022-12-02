@@ -27,7 +27,7 @@ std::byte* CPU::allocate(std::size_t count, std::align_val_t alignment)
         void* ptr = operator new[](count, alignment);
         return static_cast<std::byte*>(ptr);
     } catch (std::bad_alloc&) {
-        throw exceptions::OutOfMemoryException(type(), count);
+        throw exceptions::OutOfMemoryError(type(), count);
     }
 }
 
