@@ -48,7 +48,7 @@ void CPU::copy(std::byte* from, std::byte* to, std::size_t count)
 
 void CPU::assign(std::byte* pos, std::byte* value, DType type, std::size_t count)
 {
-    copy(value, pos, type_size(type) * count);
+    copy(value, pos, dtype_size(type) * count);
 }
 
 void CPU::fill(std::byte* pos, std::byte* value, DType type, std::size_t count)

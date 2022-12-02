@@ -51,7 +51,7 @@ void CUDA::copy_to_host(std::byte* from, std::byte* to, std::size_t count)
 
 void CUDA::assign(std::byte* pos, std::byte* value, DType type, std::size_t count)
 {
-    copy(value, pos, type_size(type) * count);
+    copy(value, pos, dtype_size(type) * count);
 }
 
 void CUDA::fill(std::byte* pos, std::byte* value, DType type, std::size_t count)

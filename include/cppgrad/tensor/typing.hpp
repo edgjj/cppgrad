@@ -65,7 +65,7 @@ using dtype_t = typename impl::Type<T>::type;
 template <typename T>
 inline constexpr DType rtype_v = (DType)impl::tuple_element_index<T>();
 
-constexpr size_t type_size(DType type)
+constexpr size_t dtype_size(DType type)
 {
     constexpr auto sizes = impl::get_sizes();
     return sizes[type];

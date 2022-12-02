@@ -66,7 +66,7 @@ public:
         dtype_t<DataType> fill_value = dtype_t<DataType> { 0 },
         size_t alignment = alignof(dtype_t<DataType>))
     {
-        auto result = create_dirty<DataType, DeviceType>(shape, alignment);
+        auto result = create_dirty<DeviceType>(shape, DataType, alignment);
         result.fill(fill_value, result.numel());
 
         return result;
@@ -81,7 +81,7 @@ public:
             throw std::runtime_error("Caught nullptr blob.");
         }
 
-        auto result = create_dirty<DataType, DeviceType>(shape, alignment);
+        auto result = create_dirty<DeviceType>(shape, DataType, alignment);
         constexpr size_t type_sz = sizeof(dtype_t<DataType>);
 
         Device* device_ptr = result._storage->_device;
@@ -111,11 +111,12 @@ public:
      * @param alignment
      * @return Tensor
      */
-    template <DType DataType, typename DeviceType = CPU>
-    static Tensor create_dirty(std::vector<size_t> shape = {},
-        size_t alignment = alignof(dtype_t<DataType>))
+    template <typename DeviceType = CPU>
+    static Tensor create_dirty(std::vector<size_t> shape,
+        DType type,
+        size_t alignment)
     {
-        auto type_size = sizeof(dtype_t<DataType>);
+        auto type_size = dtype_size(type);
 
         size_t total_elements = std::reduce(shape.begin(), shape.end());
         auto strides = impl::make_strides(shape, type_size);
@@ -137,12 +138,23 @@ public:
             std::move(strides),
             align,
             device,
-            DataType);
+            type);
     }
 
+    /**
+     * @brief Fills Tensor with desired type
+     *
+     * @tparam T
+     * @param value
+     * @param count
+     */
     template <typename T>
-    auto fill(T value, size_t count)
+    void fill(T value, size_t count)
     {
+        if (rtype_v<T> != _storage->_type_id) {
+            throw std::runtime_error("Requested type doesn't match Tensor's type.");
+        }
+
         auto* byte_ptr = reinterpret_cast<std::byte*>(&value);
         _storage->_device->fill(data(), byte_ptr, dtype(), count);
     }
@@ -204,8 +216,7 @@ public:
         std::vector<size_t> new_strides { strides().begin() + 1, strides().end() };
 
         // this is for case when a vector is stored inside tensor
-        if (new_shape.empty())
-        {
+        if (new_shape.empty()) {
             new_shape = { 1 };
             new_strides = { strides()[0] };
         }
@@ -259,6 +270,11 @@ public:
     size_t numel() const noexcept
     {
         return std::reduce(shape().begin(), shape().end());
+    }
+
+    size_t nbytes() const noexcept
+    {
+        return numel() * dtype_size(dtype());
     }
 
     /**
@@ -315,6 +331,10 @@ public:
     }
 
 #ifdef CPPGRAD_HAS_CUDA
+    /**
+     * @brief Checks if current Tensor data is located on CUDA device.
+     *
+     */
     bool is_cuda_tensor() const
     {
         // we assume that there's always device attached to Tensor
@@ -325,14 +345,31 @@ public:
         return false;
     }
 
+    /**
+     * @brief Returns a new Tensor, having same data, but located on CUDA device.
+     *
+     * @return Tensor
+     */
     Tensor cuda()
     {
         // safe pass if no CUDA devices
         if (is_cuda_tensor() || CUDA::num_devices() == 0) {
             return *this;
         }
+
+        auto new_tensor = create_dirty<CUDA>(shape(), dtype(), (size_t)_storage->_alignment);
+        auto* device = dynamic_cast<CUDA*>(new_tensor._storage->_device);
+
+        device->copy_from_host(data(), new_tensor.data(), new_tensor.nbytes());
+
+        return new_tensor;
     }
 
+    /**
+     * @brief Returns a new Tensor, having same data, but located on CPU memory.
+     *
+     * @return Tensor
+     */
     Tensor cpu()
     {
         // no need in cast
@@ -340,7 +377,13 @@ public:
             return *this;
         }
 
-        // auto* new_device = new CPU();
+        auto new_tensor = create_dirty<CPU>(shape(), dtype(), (size_t)_storage->_alignment);
+        // get device of current tensor as its CUDA device
+        auto* device = dynamic_cast<CUDA*>(_storage->_device);
+
+        device->copy_to_host(new_tensor.data(), data(), nbytes());
+
+        return new_tensor;
     }
 
 #else

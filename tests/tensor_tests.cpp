@@ -44,3 +44,7 @@ TEST(TensorBasicTests, AssignTensorVector)
     ASSERT_EQ(t[4].item<i32>(), 32);
     ASSERT_EQ(t[5].item<i32>(), 66);
 }
+
+TEST(TensorBasicTests, AssignTensorMultidimensional)
+{
+}
