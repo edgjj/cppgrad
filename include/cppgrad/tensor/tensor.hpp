@@ -43,6 +43,13 @@ public:
         *this = create<rtype_v<T>>({ 1 }, value);
     }
 
+    template <typename T>
+    Tensor(std::initializer_list<T> values)
+    {
+        *this = from_blob<rtype_v<T>>(const_cast<T*>(values.begin()),
+            { values.size() });
+    }
+
     /**
      * @brief Returns a Tensor of chosen shape, alignment and device, filled with some value.
      *
@@ -57,6 +64,55 @@ public:
     template <DType DataType, typename DeviceType = CPU>
     static Tensor create(std::vector<size_t> shape = {},
         dtype_t<DataType> fill_value = dtype_t<DataType> { 0 },
+        size_t alignment = alignof(dtype_t<DataType>))
+    {
+        auto result = create_dirty<DataType, DeviceType>(shape, alignment);
+        result.fill(fill_value, result.numel());
+
+        return result;
+    }
+
+    template <DType DataType, typename DeviceType = CPU>
+    static Tensor from_blob(dtype_t<DataType>* blob,
+        std::vector<size_t> shape = {},
+        size_t alignment = alignof(dtype_t<DataType>))
+    {
+        if (blob == nullptr) {
+            throw std::runtime_error("Caught nullptr blob.");
+        }
+
+        auto result = create_dirty<DataType, DeviceType>(shape, alignment);
+        constexpr size_t type_sz = sizeof(dtype_t<DataType>);
+
+        Device* device_ptr = result._storage->_device;
+
+#ifdef CPPGRAD_HAS_CUDA
+        if constexpr (std::is_same_v<DeviceType, CUDA>) {
+            auto* cuda_device = dynamic_cast<CUDA*>(device_ptr);
+            cuda_device->copy_from_host(reinterpret_cast<std::byte*>(blob), result.data(), type_sz * result.numel());
+
+            return result;
+        }
+#endif
+
+        device_ptr->copy(reinterpret_cast<std::byte*>(blob), result.data(), type_sz * result.numel());
+        return result;
+    }
+
+    /**
+     *
+     * @brief Returns a Tensor of chosen shape, alignment and device, containing unitialized memory.
+     *
+     * Should be used for custom initialization routines.
+     *
+     * @tparam DataType
+     * @tparam DeviceType
+     * @param shape
+     * @param alignment
+     * @return Tensor
+     */
+    template <DType DataType, typename DeviceType = CPU>
+    static Tensor create_dirty(std::vector<size_t> shape = {},
         size_t alignment = alignof(dtype_t<DataType>))
     {
         auto type_size = sizeof(dtype_t<DataType>);
@@ -76,16 +132,12 @@ public:
             throw std::runtime_error(error);
         }
 
-        auto result = Tensor(chunk,
+        return Tensor(chunk,
             std::move(shape),
             std::move(strides),
             align,
             device,
             DataType);
-
-        result.fill(fill_value, total_elements);
-
-        return result;
     }
 
     template <typename T>
@@ -151,6 +203,13 @@ public:
         std::vector<size_t> new_shape { shape().begin() + 1, shape().end() };
         std::vector<size_t> new_strides { strides().begin() + 1, strides().end() };
 
+        // this is for case when a vector is stored inside tensor
+        if (new_shape.empty())
+        {
+            new_shape = { 1 };
+            new_strides = { strides()[0] };
+        }
+
         std::byte* new_chunk = _storage->_chunk + index * strides()[0];
 
         Tensor result { new_chunk,
@@ -195,6 +254,11 @@ public:
     bool empty() const noexcept
     {
         return _storage->_shape.size() == 0;
+    }
+
+    size_t numel() const noexcept
+    {
+        return std::reduce(shape().begin(), shape().end());
     }
 
     /**

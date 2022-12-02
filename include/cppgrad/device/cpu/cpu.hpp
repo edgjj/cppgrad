@@ -11,7 +11,7 @@ struct CPU : public Device {
     void deallocate(std::byte* ptr, std::align_val_t alignment) override;
 
     void copy(std::byte* from, std::byte* to, std::size_t count) override;
-    void assign(std::byte* pos, std::byte* value, DType type) override;
+    void assign(std::byte* pos, std::byte* value, DType type, std::size_t count) override;
     void fill(std::byte* pos, std::byte* value, DType type, std::size_t count) override;
 
     std::string_view type() override;

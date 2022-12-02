@@ -35,6 +35,12 @@ TEST(TensorBasicTests, AssignTensorScalar)
 
 TEST(TensorBasicTests, AssignTensorVector)
 {
-    // Tensor t = { 0, 0, 0, 0, 0, 0 };
-    // ASSERT_EQ(t[0].item<i32>(), 150);
+    Tensor t = { 123, 443, 551, 999, 32, 66 };
+
+    ASSERT_EQ(t[0].item<i32>(), 123);
+    ASSERT_EQ(t[1].item<i32>(), 443);
+    ASSERT_EQ(t[2].item<i32>(), 551);
+    ASSERT_EQ(t[3].item<i32>(), 999);
+    ASSERT_EQ(t[4].item<i32>(), 32);
+    ASSERT_EQ(t[5].item<i32>(), 66);
 }

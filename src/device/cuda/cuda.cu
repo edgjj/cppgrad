@@ -1,4 +1,5 @@
 #include "cppgrad/device/cuda/cuda.hpp"
+#include "cppgrad/device/cuda/fill_kernel.cuh"
 
 namespace cppgrad {
 
@@ -29,6 +30,7 @@ std::byte* CUDA::allocate(std::size_t count, std::align_val_t alignment, std::st
 
 void CUDA::deallocate(std::byte* ptr, std::align_val_t alignment)
 {
+    cudaDeviceSynchronize();
     cudaFree(ptr);
 }
 
@@ -47,14 +49,14 @@ void CUDA::copy_to_host(std::byte* from, std::byte* to, std::size_t count)
     cudaMemcpy(to, from, count, cudaMemcpyKind::cudaMemcpyDeviceToHost);
 }
 
-void CUDA::assign(std::byte* pos, std::byte* value, DType type)
+void CUDA::assign(std::byte* pos, std::byte* value, DType type, std::size_t count)
 {
-    // copy(value, pos, )
+    copy(value, pos, type_size(type) * count);
 }
 
 void CUDA::fill(std::byte* pos, std::byte* value, DType type, std::size_t count)
 {
-    // we need a fillKernel there
+    FOREACH_TYPE(type, impl::fill_impl, pos, value, count);
 }
 
 std::string_view CUDA::type()
