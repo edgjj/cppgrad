@@ -71,4 +71,15 @@ TEST(TensorBasicTests, IndexErrorTest)
 
 TEST(TensorBasicTests, AssignTensorMultidimensional)
 {
+    Tensor t = {
+        { { 1, 2, 3 },
+            { 4, 5, 6 } },
+        { { 7, 8, 9 },
+            { 10, 11, 12 } }
+    };
+
+    auto shape = std::vector<size_t> { 2, 2, 3 };
+
+    ASSERT_EQ(t.shape(), shape);
+    ASSERT_EQ(t.numel(), 12);
 }

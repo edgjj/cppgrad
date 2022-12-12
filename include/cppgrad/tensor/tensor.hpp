@@ -2,7 +2,7 @@
 #define CPPGRAD_TENSOR_HPP
 
 #include <memory> // std::shared_ptr
-#include <typeindex> // std::type_index
+#include <type_traits> // std::enable_if
 #include <vector> // std::vector
 
 #include <numeric>
@@ -40,7 +40,7 @@ public:
     {
     }
 
-    template <typename T>
+    template <typename T, std::enable_if_t<std::is_arithmetic_v<T>>* = nullptr>
     Tensor(T value)
     {
         // this is kinda weird to pass index and then cast it back to type
@@ -52,6 +52,30 @@ public:
     {
         *this = from_blob<rtype_v<T>>(const_cast<T*>(values.begin()),
             { values.size() });
+    }
+
+    // ugly, is subject to change
+    Tensor(std::initializer_list<Tensor> values)
+    {
+        if (values.begin()->empty()) {
+            throw exceptions::GenericError("Initializer list initialization requires non-empty rows");
+        }
+
+        auto& base_shape = values.begin()->shape();
+        auto base_dtype = values.begin()->dtype();
+
+        for (const auto& v : values) {
+            if (!std::equal(base_shape.begin(), base_shape.end(), v.shape().begin())
+                || base_dtype != v.dtype()) {
+                throw exceptions::GenericError("Initializer list initialization requires all rows share same shape and DType");
+            }
+        }
+
+        std::vector<size_t> shape { values.size() };
+        shape.insert(shape.end(), base_shape.begin(), base_shape.end());
+
+        auto align = (size_t)values.begin()->base_storage()->_alignment;
+        *this = create_dirty(shape, base_dtype, align);
     }
 
     /**
@@ -133,7 +157,7 @@ public:
     {
         auto type_size = dtype_size(type);
 
-        size_t total_elements = std::reduce(shape.begin(), shape.end());
+        size_t total_elements = std::reduce(shape.begin(), shape.end(), size_t(1), std::multiplies<size_t>());
         auto strides = impl::make_strides(shape, type_size);
 
         std::align_val_t align { alignment };
@@ -283,7 +307,8 @@ public:
 
     size_t numel() const noexcept
     {
-        return std::reduce(shape().begin(), shape().end());
+        // note: 3rd arg explicit type is needed to avoid overflow
+        return std::reduce(shape().begin(), shape().end(), size_t(1), std::multiplies<size_t>());
     }
 
     size_t nbytes() const noexcept
