@@ -1,0 +1,22 @@
+name: Windows
+
+on: [push, pull_request]
+
+jobs:
+  build-macos:  
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Run CMake
+      run: |
+            mkdir build
+            cd build
+            cmake -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON -DCPPGRAD_CUDA=OFF ..
+            cmake --build . --parallel
+
+    - name: Run tests
+      run: |
+        cd build/tests
+        ctest --verbose --output-on-failure .
