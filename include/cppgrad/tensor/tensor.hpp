@@ -76,6 +76,9 @@ public:
 
         auto align = (size_t)values.begin()->base_storage()->_alignment;
         *this = create_dirty(shape, base_dtype, align);
+
+        for (size_t i = 0; i < values.size(); i++) {
+        }
     }
 
     /**
@@ -234,31 +237,48 @@ public:
     }
 
     /**
-     * @brief Lazy indexing operator. Returns tensor wrapping a view onto current tensor data.
+     * @brief Indexing operator. Returns tensor wrapping a view onto current tensor data.
      *
      * @param index
      * @return Tensor
      */
-    Tensor operator[](size_t index)
+
+    template <typename... Indices>
+    Tensor operator()(Indices... variadic_index)
     {
+        constexpr size_t indices_size = sizeof...(Indices);
+        size_t indices[indices_size] = { variadic_index... };
+
         if (empty()) {
             throw exceptions::IndexError();
         }
 
-        if (index >= shape()[0]) {
-            throw exceptions::IndexError(index, shape()[0]);
+        // not sure if it should be IndexError
+        if (indices_size > shape().size()) {
+            throw exceptions::IndexError(indices_size, shape().size());
         }
 
-        std::vector<size_t> new_shape { shape().begin() + 1, shape().end() };
-        std::vector<size_t> new_strides { strides().begin() + 1, strides().end() };
+        auto& cur_strides = strides();
+        auto& cur_shape = shape();
+
+        std::vector<size_t> new_shape { cur_shape.begin() + indices_size, cur_shape.end() };
+        std::vector<size_t> new_strides { cur_strides.begin() + indices_size, cur_strides.end() };
 
         // this is for case when a vector is stored inside tensor
         if (new_shape.empty()) {
             new_shape = { 1 };
-            new_strides = { strides()[0] };
+            new_strides = { cur_strides[0] };
         }
 
-        std::byte* new_chunk = _storage->_chunk + index * strides()[0];
+        std::byte* new_chunk = _storage->_chunk;
+
+        for (size_t i = 0; i < indices_size; i++) {
+            if (indices[i] > cur_shape[i]) {
+                throw exceptions::IndexError(indices[i], cur_shape[i]);
+            }
+
+            new_chunk += indices[i] * cur_strides[i];
+        }
 
         Tensor result { new_chunk,
             std::move(new_shape),
@@ -270,6 +290,17 @@ public:
         result._base = base_storage();
 
         return result;
+    }
+
+    /**
+     * @brief Indexing operator. 1-dim operator() wrapper.
+     *
+     * @param index
+     * @return Tensor
+     */
+    Tensor operator[](size_t index)
+    {
+        return (*this)(index);
     }
 
     /**
