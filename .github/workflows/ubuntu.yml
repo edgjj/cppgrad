@@ -3,7 +3,7 @@ name: MacOS
 on: [push, pull_request]
 
 jobs:
-  build-macos:  
+  build-ubuntu:  
     runs-on: macos-latest
 
     steps:
