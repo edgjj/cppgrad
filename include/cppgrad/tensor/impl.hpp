@@ -13,29 +13,6 @@ struct Device;
 namespace impl {
 
     /**
-     * @brief Internal function to make Tensor strides.
-     *
-     * @param shape Requested tensor shape
-     * @param type_size Requested tensor type size in bytes
-     * @return std::vector<size_t> Strides
-     */
-    std::vector<size_t> make_strides(std::vector<size_t> shape, size_t type_size)
-    {
-        std::vector<size_t> strides(shape.size());
-        size_t accum = type_size;
-
-        auto it_stride = strides.rbegin();
-
-        for (auto it = shape.rbegin(); it != shape.rend(); it++) {
-            *it_stride = accum;
-            accum *= *it;
-            it_stride++;
-        }
-
-        return strides;
-    }
-
-    /**
      * @brief Data object encapsulating all Tensor data.
      *        Required for lazy copying semantics.
      *

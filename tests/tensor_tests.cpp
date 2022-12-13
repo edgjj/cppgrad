@@ -82,4 +82,6 @@ TEST(TensorBasicTests, AssignTensorMultidimensional)
 
     ASSERT_EQ(t.shape(), shape);
     ASSERT_EQ(t.numel(), 12);
+
+    ASSERT_EQ(t(0, 0, 1).item<i32>(), 2);
 }

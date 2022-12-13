@@ -1,6 +1,7 @@
 #ifndef CPPGRAD_TENSOR_HPP
 #define CPPGRAD_TENSOR_HPP
 
+#include <algorithm> // std::is_sorted
 #include <memory> // std::shared_ptr
 #include <type_traits> // std::enable_if
 #include <vector> // std::vector
@@ -11,6 +12,7 @@
 #include "cppgrad/device/cuda/cuda.hpp"
 
 #include "cppgrad/tensor/impl.hpp"
+#include "cppgrad/tensor/impl_util.hpp"
 
 // exceptions
 #include "cppgrad/exceptions/generic_error.hpp"
@@ -26,13 +28,58 @@ class Tensor {
 public:
     using DefaultType = float;
 
-    // default constructors / assignments
+    // default constructors
     Tensor(const Tensor&) = default;
     Tensor(Tensor&&) = default;
 
-    // atm these are just mock; actually we need to make some data copying
-    Tensor& operator=(const Tensor&) = default;
-    Tensor& operator=(Tensor&&) = default;
+    Tensor& operator=(const Tensor& other)
+    {
+        check_assign(other);
+
+        // just return shallow copy for empty case
+        if (empty()) {
+            _storage = other._storage;
+            _base = other._base;
+            return *this;
+        }
+
+        if (is_contiguous() && other.is_contiguous()) {
+            device()->copy(other.data(), data(), nbytes());
+        } else {
+            device()->strided_copy(nullptr, nullptr, dtype(), shape(), strides());
+        }
+    }
+
+    Tensor& operator=(Tensor&& other)
+    {
+        auto move_storage = [&]() -> Tensor& {
+            _storage = std::move(other._storage);
+            _base = std::move(other._base);
+            return *this;
+        };
+
+        // just move if empty
+        if (empty()) {
+            return move_storage();
+        }
+
+        // check if assignment requirements satisfy
+        check_assign(other);
+
+        // we can move safely if both are contiguous
+        if (!is_view() && !other.is_view()) {
+            return move_storage();
+        }
+
+        // fallback to copying
+        if (is_contiguous() && other.is_contiguous()) {
+            device()->copy(other.data(), data(), nbytes());
+        } else {
+            device()->strided_copy(other.data(), data(), dtype(), shape(), strides());
+        }
+
+        return *this;
+    }
 
     // this ensures that _storage won't be empty
     Tensor()
@@ -320,7 +367,7 @@ public:
      *
      * @return std::byte* raw data pointer
      */
-    std::byte* data()
+    std::byte* data() const
     {
         return _storage->_chunk;
     }
@@ -333,7 +380,7 @@ public:
     bool empty() const noexcept
     {
         // right won't be evaluated if left was
-        return _storage->_shape.size() == 0 || _storage->_shape[0] == 0;
+        return !(bool)_storage || _storage->_shape.size() == 0 || _storage->_shape[0] == 0;
     }
 
     size_t numel() const noexcept
@@ -415,6 +462,11 @@ public:
         return false;
     }
 
+    Device* device() const
+    {
+        return base_storage()->_device;
+    }
+
     /**
      * @brief Returns a new Tensor, having same data, but located on CUDA device.
      *
@@ -474,6 +526,29 @@ public:
     }
 #endif
 
+    /**
+     * @brief Determines if Tensor is view onto other Tensor
+     *
+     */
+    bool is_view() const
+    {
+        return (bool)_base;
+    }
+
+    /**
+     * @brief Determines if Tensor's data stored contiguous.
+     * Might be useful for working with transposed Tensors.
+     *
+     */
+    bool is_contiguous() const
+    {
+        if (empty()) {
+            return true;
+        }
+
+        return std::is_sorted(strides().rbegin(), strides().rend());
+    }
+
     ~Tensor()
     {
         // check if we have parent TensorData attached
@@ -521,13 +596,13 @@ private:
      */
     std::shared_ptr<impl::TensorData>& base_storage()
     {
-        auto& actual_storage = _base ? _base : _storage;
+        auto& actual_storage = is_view() ? _base : _storage;
         return actual_storage;
     }
 
     const std::shared_ptr<impl::TensorData>& base_storage() const
     {
-        auto& actual_storage = _base ? _base : _storage;
+        auto& actual_storage = is_view() ? _base : _storage;
         return actual_storage;
     }
 
@@ -539,6 +614,27 @@ private:
     Tensor(std::shared_ptr<impl::TensorData> base_storage)
         : _storage(std::move(base_storage))
     {
+    }
+
+    /**
+     * @brief Internal function to check if Tensors are compatible to assign.
+     *
+     * @param other Tensor
+     * @return bool Determines if both Tensors are views.
+     */
+    void check_assign(const Tensor& other)
+    {
+        if (other.shape() != shape()) {
+            throw exceptions::GenericError("Tensor assignment shape mismatch");
+        }
+
+        if (other.dtype() != dtype()) {
+            throw exceptions::GenericError("Tensor assignment DType mismatch");
+        }
+
+        if (other.device()->type() != device()->type()) {
+            throw exceptions::GenericError("Tensor assignment Device mismatch");
+        }
     }
 
     std::shared_ptr<impl::TensorData> _storage;

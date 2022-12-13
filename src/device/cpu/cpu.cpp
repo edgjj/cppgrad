@@ -19,6 +19,15 @@ namespace impl {
         // std::fill_n(OutputIt, Size, T& value)
         std::fill_n(ptr, count, fill_value);
     }
+
+    template <typename T>
+    static void strided_copy_impl(std::byte* from, std::byte* to, const std::vector<size_t>& shape, const std::vector<size_t>& strides)
+    {
+        auto* from_ptr = reinterpret_cast<T*>(from);
+        auto* to_ptr = reinterpret_cast<T*>(to);
+
+        // do something
+    }
 }
 
 std::byte* CPU::allocate(std::size_t count, std::align_val_t alignment)
@@ -41,10 +50,15 @@ void CPU::copy(std::byte* from, std::byte* to, std::size_t count)
     std::memcpy(to, from, count);
 }
 
-void CPU::assign(std::byte* pos, std::byte* value, DType type, std::size_t count)
+void CPU::strided_copy(std::byte* from, std::byte* to, DType type, const std::vector<size_t>& shape, const std::vector<size_t>& strides)
 {
-    copy(value, pos, dtype_size(type) * count);
+    FOREACH_TYPE(type, impl::strided_copy_impl, from, to, shape, strides);
 }
+
+// void CPU::assign(std::byte* pos, std::byte* value, DType type, std::size_t count)
+// {
+//     copy(value, pos, dtype_size(type) * count);
+// }
 
 void CPU::fill(std::byte* pos, std::byte* value, DType type, std::size_t count)
 {

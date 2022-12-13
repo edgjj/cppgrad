@@ -81,22 +81,22 @@ constexpr const char* dtype_name(DType type)
 #define FOREACH_TYPE(type, fn, ...)          \
     switch (type) {                          \
     case u32:                                \
-        fn<dtype_t<u32>>(pos, value, count); \
+        fn<dtype_t<u32>>(__VA_ARGS__ ); \
         break;                               \
     case u64:                                \
-        fn<dtype_t<u64>>(pos, value, count); \
+        fn<dtype_t<u64>>(__VA_ARGS__ ); \
         break;                               \
     case i32:                                \
-        fn<dtype_t<i32>>(pos, value, count); \
+        fn<dtype_t<i32>>(__VA_ARGS__ ); \
         break;                               \
     case i64:                                \
-        fn<dtype_t<i64>>(pos, value, count); \
+        fn<dtype_t<i64>>(__VA_ARGS__ ); \
         break;                               \
     case f32:                                \
-        fn<dtype_t<f32>>(pos, value, count); \
+        fn<dtype_t<f32>>(__VA_ARGS__ ); \
         break;                               \
     case f64:                                \
-        fn<dtype_t<f64>>(pos, value, count); \
+        fn<dtype_t<f64>>(__VA_ARGS__ ); \
         break;                               \
     }
 
