@@ -473,6 +473,11 @@ public:
         return result;
     }
 
+    Device* device() const
+    {
+        return base_storage()->_device;
+    }
+
 #ifdef CPPGRAD_HAS_CUDA
     /**
      * @brief Checks if current Tensor data is located on CUDA device.
@@ -486,11 +491,6 @@ public:
         }
 
         return false;
-    }
-
-    Device* device() const
-    {
-        return base_storage()->_device;
     }
 
     /**
