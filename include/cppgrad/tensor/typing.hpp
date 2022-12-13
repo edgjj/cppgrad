@@ -57,6 +57,20 @@ namespace impl {
     {
         return get_sizes_helper(std::make_index_sequence<std::tuple_size_v<TypesTuple>> {});
     }
+
+    template <typename T, typename Fn, typename... Args>
+    constexpr void for_each_type_matcher(Fn&& fun, DType type, Args&&... args)
+    {
+        if (type == (DType)tuple_element_index<T>()) {
+            fun(T {});
+        }
+    }
+
+    template <typename Fn, DType... types>
+    constexpr void for_each_type_impl(Fn&& fun, DType type)
+    {
+        (for_each_type_matcher<typename impl::Type<types>::type>(std::forward<Fn>(fun), type), ...);
+    }
 }
 
 template <DType T>
@@ -77,28 +91,16 @@ constexpr const char* dtype_name(DType type)
     return names[type];
 }
 
-// this should be replaced with better alternative
-#define FOREACH_TYPE(type, fn, ...)          \
-    switch (type) {                          \
-    case u32:                                \
-        fn<dtype_t<u32>>(__VA_ARGS__ ); \
-        break;                               \
-    case u64:                                \
-        fn<dtype_t<u64>>(__VA_ARGS__ ); \
-        break;                               \
-    case i32:                                \
-        fn<dtype_t<i32>>(__VA_ARGS__ ); \
-        break;                               \
-    case i64:                                \
-        fn<dtype_t<i64>>(__VA_ARGS__ ); \
-        break;                               \
-    case f32:                                \
-        fn<dtype_t<f32>>(__VA_ARGS__ ); \
-        break;                               \
-    case f64:                                \
-        fn<dtype_t<f64>>(__VA_ARGS__ ); \
-        break;                               \
-    }
+template <typename Fn>
+constexpr void for_each_type(Fn&& fun, DType type)
+{
+    // this looks much better
+    impl::for_each_type_impl<Fn, u32, u64, i32, i64, f32, f64>(std::forward<Fn>(fun), type);
+}
+
+// non-lambda macro, takes things by ref atm
+#define FOREACH_TYPE(type, fn, ...) \
+    for_each_type([&](auto tag) { fn<decltype(tag)>(__VA_ARGS__); }, type);
 
 }
 
