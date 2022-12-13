@@ -32,10 +32,16 @@ public:
     Tensor(const Tensor&) = default;
     Tensor(Tensor&&) = default;
 
+    /**
+     * @brief Copy assignment.
+     * If left-hand Tensor is empty, shallow copy is done,
+     * otherwise deep copy is
+     *
+     * @param other
+     * @return Tensor&
+     */
     Tensor& operator=(const Tensor& other)
     {
-        check_assign(other);
-
         // just return shallow copy for empty case
         if (empty()) {
             _storage = other._storage;
@@ -43,11 +49,25 @@ public:
             return *this;
         }
 
+        CPPGRAD_CHECK_EQ(shape(), other.shape(),
+            exceptions::GenericError,
+            "Assign (move) shape mismatch");
+
+        CPPGRAD_CHECK_EQ(dtype(), other.dtype(),
+            exceptions::GenericError,
+            "Assign (move) DType mismatch");
+
+        CPPGRAD_CHECK_EQ(device()->type(), other.device()->type(),
+            exceptions::GenericError,
+            "Assign (move) Device type mismatch");
+
         if (is_contiguous() && other.is_contiguous()) {
             device()->copy(other.data(), data(), nbytes());
         } else {
             device()->strided_copy(nullptr, nullptr, dtype(), shape(), strides());
         }
+
+        return *this;
     }
 
     Tensor& operator=(Tensor&& other)
@@ -64,14 +84,24 @@ public:
         }
 
         // check if assignment requirements satisfy
-        check_assign(other);
+        CPPGRAD_CHECK_EQ(shape(), other.shape(),
+            exceptions::GenericError,
+            "Assign (move) shape mismatch");
 
-        // we can move safely if both are contiguous
+        CPPGRAD_CHECK_EQ(dtype(), other.dtype(),
+            exceptions::GenericError,
+            "Assign (move) DType mismatch");
+
+        // we can move safely if both are not views
         if (!is_view() && !other.is_view()) {
             return move_storage();
         }
 
-        // fallback to copying
+        CPPGRAD_CHECK_EQ(device()->type(), other.device()->type(),
+            exceptions::GenericError,
+            "Assign (move) Device type mismatch");
+
+        // fallback to copying;
         if (is_contiguous() && other.is_contiguous()) {
             device()->copy(other.data(), data(), nbytes());
         } else {
@@ -104,9 +134,9 @@ public:
     // ugly, is subject to change
     Tensor(std::initializer_list<Tensor> values)
     {
-        if (values.begin()->empty()) {
-            throw exceptions::GenericError("Initializer list initialization requires non-empty rows");
-        }
+        CPPGRAD_CHECK_FALSE(values.begin()->empty(),
+            exceptions::GenericError,
+            "Initializer list initialization requires non-empty rows");
 
         auto& base_shape = values.begin()->shape();
         auto base_dtype = values.begin()->dtype();
@@ -125,6 +155,7 @@ public:
         *this = create_dirty(shape, base_dtype, align);
 
         for (size_t i = 0; i < values.size(); i++) {
+            (*this)(i) = *(values.begin() + i);
         }
     }
 
@@ -166,9 +197,9 @@ public:
         std::vector<size_t> shape = {},
         size_t alignment = alignof(dtype_t<DataType>))
     {
-        if (blob == nullptr) {
-            throw exceptions::GenericError("Caught nullptr blob.");
-        }
+        CPPGRAD_CHECK_FALSE(blob == nullptr,
+            exceptions::GenericError,
+            "Caught nullptr blob.");
 
         auto result = create_dirty<DeviceType>(shape, DataType, alignment);
         constexpr size_t type_sz = sizeof(dtype_t<DataType>);
@@ -234,9 +265,9 @@ public:
     template <typename T>
     void fill(T value, size_t count)
     {
-        if (rtype_v<T> != _storage->_type_id) {
-            throw exceptions::TypeError(rtype_v<T>, _storage->_type_id);
-        }
+        CPPGRAD_CHECK_EQ(rtype_v<T>, _storage->_type_id,
+            exceptions::TypeError,
+            rtype_v<T>, _storage->_type_id);
 
         auto* byte_ptr = reinterpret_cast<std::byte*>(&value);
         _storage->_device->fill(data(), byte_ptr, dtype(), count);
@@ -254,17 +285,15 @@ public:
     template <DType DataType>
     auto item()
     {
-        if (empty()) {
-            throw exceptions::IndexError();
-        }
+        CPPGRAD_CHECK_FALSE(empty(),
+            exceptions::IndexError);
 
-        if (shape().size() > 1 || shape()[0] > 1) {
-            throw exceptions::GenericError("Can only convert tensor of size 1 to a scalar.");
-        }
+        CPPGRAD_CHECK_FALSE(shape().size() > 1 || shape()[0] > 1,
+            exceptions::GenericError,
+            "Can only convert tensor of size 1 to a scalar.");
 
-        if (DataType != _storage->_type_id) {
-            throw exceptions::TypeError(DataType, _storage->_type_id);
-        }
+        CPPGRAD_CHECK_EQ(DataType, _storage->_type_id,
+            exceptions::TypeError, DataType, _storage->_type_id);
 
         using ResultType = dtype_t<DataType>;
 
@@ -294,16 +323,14 @@ public:
     Tensor operator()(Indices... variadic_index)
     {
         constexpr size_t indices_size = sizeof...(Indices);
-        size_t indices[indices_size] = { variadic_index... };
+        size_t indices[indices_size] = { static_cast<size_t>(variadic_index)... };
 
-        if (empty()) {
-            throw exceptions::IndexError();
-        }
+        CPPGRAD_CHECK_FALSE(empty(),
+            exceptions::IndexError);
 
         // not sure if it should be IndexError
-        if (indices_size > shape().size()) {
-            throw exceptions::IndexError(indices_size, shape().size());
-        }
+        CPPGRAD_CHECK_FALSE(indices_size > shape().size(),
+            exceptions::IndexError, indices_size, shape().size());
 
         auto& cur_strides = strides();
         auto& cur_shape = shape();
@@ -320,9 +347,8 @@ public:
         std::byte* new_chunk = _storage->_chunk;
 
         for (size_t i = 0; i < indices_size; i++) {
-            if (indices[i] > cur_shape[i]) {
-                throw exceptions::IndexError(indices[i], cur_shape[i]);
-            }
+            CPPGRAD_CHECK_FALSE(indices[i] >= cur_shape[i],
+                exceptions::IndexError, indices[i], cur_shape[i]);
 
             new_chunk += indices[i] * cur_strides[i];
         }
@@ -614,27 +640,6 @@ private:
     Tensor(std::shared_ptr<impl::TensorData> base_storage)
         : _storage(std::move(base_storage))
     {
-    }
-
-    /**
-     * @brief Internal function to check if Tensors are compatible to assign.
-     *
-     * @param other Tensor
-     * @return bool Determines if both Tensors are views.
-     */
-    void check_assign(const Tensor& other)
-    {
-        if (other.shape() != shape()) {
-            throw exceptions::GenericError("Tensor assignment shape mismatch");
-        }
-
-        if (other.dtype() != dtype()) {
-            throw exceptions::GenericError("Tensor assignment DType mismatch");
-        }
-
-        if (other.device()->type() != device()->type()) {
-            throw exceptions::GenericError("Tensor assignment Device mismatch");
-        }
     }
 
     std::shared_ptr<impl::TensorData> _storage;

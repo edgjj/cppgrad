@@ -4,29 +4,45 @@
 #include "cppgrad/tensor/typing.hpp"
 #include <vector>
 
-namespace cppgrad::impl {
+namespace cppgrad {
 
 /**
- * @brief Internal function to make Tensor strides.
+ * @brief Internal macro to check equality
  *
- * @param shape Requested tensor shape
- * @param type_size Requested tensor type size in bytes
- * @return std::vector<size_t> Strides
  */
-std::vector<size_t> make_strides(std::vector<size_t> shape, size_t type_size)
-{
-    std::vector<size_t> strides(shape.size());
-    size_t accum = type_size;
+#define CPPGRAD_CHECK_EQ(lhs, rhs, exception_type, ...) \
+    if (lhs != rhs)                                     \
+        throw exception_type(__VA_ARGS__);
 
-    auto it_stride = strides.rbegin();
+#define CPPGRAD_CHECK_FALSE(val, exception_type, ...) \
+    if (val)                                          \
+        throw exception_type(__VA_ARGS__);
 
-    for (auto it = shape.rbegin(); it != shape.rend(); it++) {
-        *it_stride = accum;
-        accum *= *it;
-        it_stride++;
+namespace impl {
+
+    /**
+     * @brief Internal function to make Tensor strides.
+     *
+     * @param shape Requested tensor shape
+     * @param type_size Requested tensor type size in bytes
+     * @return std::vector<size_t> Strides
+     */
+    std::vector<size_t> make_strides(std::vector<size_t> shape, size_t type_size)
+    {
+        std::vector<size_t> strides(shape.size());
+        size_t accum = type_size;
+
+        auto it_stride = strides.rbegin();
+
+        for (auto it = shape.rbegin(); it != shape.rend(); it++) {
+            *it_stride = accum;
+            accum *= *it;
+            it_stride++;
+        }
+
+        return strides;
     }
 
-    return strides;
 }
 
 }
