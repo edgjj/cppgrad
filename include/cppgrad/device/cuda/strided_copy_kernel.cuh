@@ -18,6 +18,8 @@ namespace impl {
     template <typename T>
     static void strided_copy_impl(std::byte* from, std::byte* to, const std::vector<size_t>& shape, const std::vector<size_t>& strides)
     {
+        throw std::exception();
+
         // auto* ptr = reinterpret_cast<T*>(pos);
         // auto fill_value = *reinterpret_cast<T*>(value);
         // strided_copy_kernel<<<GRID_SZ, BLOCK_SZ>>>(ptr, count, fill_value);

@@ -26,6 +26,7 @@ namespace impl {
         auto* from_ptr = reinterpret_cast<T*>(from);
         auto* to_ptr = reinterpret_cast<T*>(to);
 
+        throw std::exception();
         // do something
     }
 }
