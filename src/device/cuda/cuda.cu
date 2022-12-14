@@ -1,8 +1,6 @@
 #include "cppgrad/device/cuda/cuda.hpp"
-#include "cppgrad/device/cuda/fill_kernel.cuh"
-#include "cppgrad/device/cuda/strided_copy_kernel.cuh"
+#include "cppgrad/device/cuda/cuda_executor.hpp"
 #include "cppgrad/exceptions/out_of_memory.hpp"
-#include <stdexcept>
 
 namespace cppgrad {
 
@@ -29,39 +27,12 @@ void CUDA::deallocate(std::byte* ptr, std::align_val_t alignment)
     cudaFree(ptr);
 }
 
-void CUDA::copy(std::byte* from, std::byte* to, std::size_t count)
+impl::Executor& CUDA::get_executor()
 {
-    cudaMemcpy(to, from, count, cudaMemcpyKind::cudaMemcpyDeviceToDevice);
-}
+    // dispatch between AVX/SSE/etc executors there?
+    static impl::CUDAExecutor executor;
 
-void CUDA::strided_copy(std::byte* from,
-    std::byte* to,
-    DType type,
-    const std::vector<size_t>& shape,
-    const std::vector<size_t>& from_strides,
-    const std::vector<size_t>& to_strides)
-{
-    FOREACH_TYPE(type, impl::strided_copy_impl, from, to, shape.data(), from_strides.data(), to_strides.data(), shape.size());
-}
-
-void CUDA::copy_from_host(std::byte* from, std::byte* to, std::size_t count)
-{
-    cudaMemcpy(to, from, count, cudaMemcpyKind::cudaMemcpyHostToDevice);
-}
-
-void CUDA::copy_to_host(std::byte* from, std::byte* to, std::size_t count)
-{
-    cudaMemcpy(to, from, count, cudaMemcpyKind::cudaMemcpyDeviceToHost);
-}
-
-// void CUDA::assign(std::byte* pos, std::byte* value, DType type, std::size_t count)
-// {
-//     copy(value, pos, dtype_size(type) * count);
-// }
-
-void CUDA::fill(std::byte* pos, std::byte* value, DType type, std::size_t count)
-{
-    FOREACH_TYPE(type, impl::fill_impl, pos, value, count);
+    return executor;
 }
 
 std::string_view CUDA::type()

@@ -62,9 +62,9 @@ public:
             "Assign (move) Device type mismatch");
 
         if (is_contiguous() && other.is_contiguous()) {
-            device()->copy(other.data(), data(), nbytes());
+            executor().copy(other.data(), data(), nbytes());
         } else {
-            device()->strided_copy(nullptr, nullptr, dtype(), shape(), other.strides(), strides());
+            executor().strided_copy(nullptr, nullptr, dtype(), shape(), other.strides(), strides());
         }
 
         return *this;
@@ -103,9 +103,9 @@ public:
 
         // fallback to copying;
         if (is_contiguous() && other.is_contiguous()) {
-            device()->copy(other.data(), data(), nbytes());
+            executor().copy(other.data(), data(), nbytes());
         } else {
-            device()->strided_copy(other.data(), data(), dtype(), shape(), other.strides(), strides());
+            executor().strided_copy(other.data(), data(), dtype(), shape(), other.strides(), strides());
         }
 
         return *this;
@@ -204,18 +204,11 @@ public:
         auto result = create_dirty<DeviceType>(shape, DataType, alignment);
         constexpr size_t type_sz = sizeof(dtype_t<DataType>);
 
-        Device* device_ptr = result._storage->_device;
-
-#ifdef CPPGRAD_HAS_CUDA
-        if constexpr (std::is_same_v<DeviceType, CUDA>) {
-            auto* cuda_device = dynamic_cast<CUDA*>(device_ptr);
-            cuda_device->copy_from_host(reinterpret_cast<std::byte*>(blob), result.data(), type_sz * result.numel());
-
-            return result;
-        }
-#endif
-
-        device_ptr->copy(reinterpret_cast<std::byte*>(blob), result.data(), type_sz * result.numel());
+        /**
+         *  We use HostToDevice there since DeviceType might be CUDA, or other non-CPU type.
+         *  On CPU it's no-op.
+         */
+        result.executor().copy(reinterpret_cast<std::byte*>(blob), result.data(), type_sz * result.numel(), impl::HostToDevice);
         return result;
     }
 
@@ -270,7 +263,7 @@ public:
             rtype_v<T>, _storage->_type_id);
 
         auto* byte_ptr = reinterpret_cast<std::byte*>(&value);
-        _storage->_device->fill(data(), byte_ptr, dtype(), count);
+        executor().fill(data(), byte_ptr, dtype(), count);
     }
 
     /**
@@ -297,17 +290,14 @@ public:
 
         using ResultType = dtype_t<DataType>;
 
-#ifdef CPPGRAD_HAS_CUDA
         // we need transfer data from CUDA device first
         if (is_cuda_tensor()) {
-            auto* cuda_device = dynamic_cast<CUDA*>(_storage->_device);
             dtype_t<DataType> data { 0 };
-
-            cuda_device->copy_to_host(_storage->_chunk, reinterpret_cast<std::byte*>(&data), sizeof(data));
+            // copy_to_host
+            executor().copy(_storage->_chunk, reinterpret_cast<std::byte*>(&data), sizeof(data), impl::DeviceToHost);
 
             return data;
         }
-#endif
 
         return *reinterpret_cast<ResultType*>(_storage->_chunk);
     }
@@ -506,9 +496,7 @@ public:
         }
 
         auto new_tensor = create_dirty<CUDA>(shape(), dtype(), (size_t)_storage->_alignment);
-        auto* device = dynamic_cast<CUDA*>(new_tensor._storage->_device);
-
-        device->copy_from_host(data(), new_tensor.data(), new_tensor.nbytes());
+        new_tensor.executor().copy(data(), new_tensor.data(), new_tensor.nbytes(), impl::HostToDevice);
 
         return new_tensor;
     }
@@ -526,10 +514,7 @@ public:
         }
 
         auto new_tensor = create_dirty<CPU>(shape(), dtype(), (size_t)_storage->_alignment);
-        // get device of current tensor as its CUDA device
-        auto* device = dynamic_cast<CUDA*>(_storage->_device);
-
-        device->copy_to_host(new_tensor.data(), data(), nbytes());
+        executor().copy(new_tensor.data(), data(), nbytes(), impl::DeviceToHost);
 
         return new_tensor;
     }
@@ -634,6 +619,16 @@ private:
     }
 
     /**
+     * @brief Utility method to get executor of attached device
+     *
+     * @return impl::Executor&
+     */
+    impl::Executor& executor()
+    {
+        return device()->get_executor();
+    }
+
+    /**
      * @brief Construct a new Tensor object from parent's TensorData.
      *
      * @param base_storage Parent's TensorData
@@ -643,6 +638,7 @@ private:
     {
     }
 
+private:
     std::shared_ptr<impl::TensorData> _storage;
     // duplicate for views
     std::shared_ptr<impl::TensorData> _base;

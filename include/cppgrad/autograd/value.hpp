@@ -7,44 +7,10 @@
 #include <utility> // std::move
 #include <vector> // std::vector
 
+#include "cppgrad/autograd/impl.hpp" // build_topo
 #include "cppgrad/autograd/misc_ops.hpp" // plus, minus, etc overloads
 
 namespace cppgrad {
-
-// forward decl for topo
-template <typename T>
-class Value;
-
-template <typename T>
-using ValuePtr = std::shared_ptr<Value<T>>;
-
-namespace impl {
-
-    template <typename T>
-    void build_topo(ValuePtr<T> v, std::vector<ValuePtr<T>>& topo)
-    {
-        if (v && !v->visited()) {
-            auto [left, right] = v->_prev;
-
-            v->visited() = true;
-
-            build_topo(left, topo);
-            build_topo(right, topo);
-
-            topo.push_back(v);
-        }
-    }
-
-    template <typename T>
-    std::vector<ValuePtr<T>> build_topo(ValuePtr<T> v)
-    {
-        std::vector<ValuePtr<T>> topo;
-        build_topo(v, topo);
-
-        return topo;
-    }
-
-}
 
 template <typename T>
 class Value {
@@ -173,6 +139,13 @@ public:
         for (auto& i : topo) {
             i->visited() = false;
         }
+    }
+
+    void zero_grad()
+    {
+        _backward = [] {};
+        _prev = {};
+        _storage->grad = T(0);
     }
 
     T& grad()

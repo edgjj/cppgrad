@@ -1,13 +1,12 @@
 #ifndef CPPGRAD_DEVICE_HPP
 #define CPPGRAD_DEVICE_HPP
 
-#include "cppgrad/tensor/typing.hpp"
+#include "cppgrad/device/executor.hpp"
+#include "cppgrad/tensor/tensor_fwd.hpp"
 
 #include <cstddef>
 #include <new>
-#include <string>
 #include <string_view>
-#include <vector>
 
 namespace cppgrad {
 
@@ -32,43 +31,11 @@ struct Device {
     virtual void deallocate(std::byte* ptr, std::align_val_t alignment) = 0;
 
     /**
-     * @brief Non-strided copy routine. Shouldn't be used with non-contiguous chunks.
+     * @brief Get the Device executor object
      *
-     * @param from source chunk
-     * @param to destination chunk
-     * @param count size in bytes
+     * @return impl::Executor&
      */
-    virtual void copy(std::byte* from, std::byte* to, std::size_t count) = 0;
-
-    /**
-     * @brief Strided row-major copy routine
-     *
-     * @param from source data chunk
-     * @param to destination data chunk
-     * @param type data DType
-     * @param shape data shape
-     * @param to_strides dest data strides
-     * @param from_strides src data strides
-     */
-    virtual void strided_copy(std::byte* from, std::byte* to,
-        DType type,
-        const std::vector<size_t>& shape,
-        const std::vector<size_t>& from_strides,
-        const std::vector<size_t>& to_strides)
-        = 0;
-
-    // TODO: think about using this for assigning scalars/vectors without using intermediate Tensors.
-    // virtual void assign(std::byte* pos, std::byte* value, DType type, std::size_t count) = 0;
-
-    /**
-     * @brief Assigns value of given DType to each chunk element
-     *
-     * @param pos pointer to chunk/position
-     * @param value pointer to value
-     * @param type data DType
-     * @param count size in elements
-     */
-    virtual void fill(std::byte* pos, std::byte* value, DType type, std::size_t count) = 0;
+    virtual impl::Executor& get_executor() = 0;
 
     /**
      * @brief Tells which type this Device is. "cpu", "cuda", etc..
