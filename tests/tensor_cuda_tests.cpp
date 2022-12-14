@@ -58,4 +58,24 @@ TEST(TensorCUDATests, OOMTest)
     size_t size = (size_t)1 << 48;
     ASSERT_THROW(Tensor::create<i64>({ size }), exceptions::OutOfMemoryError);
 }
+
+TEST(TensorCUDATests, AssignTensorMultidimensional)
+{
+    Tensor t = {
+        { { 1, 2, 3 },
+            { 4, 5, 6 } },
+        { { 7, 8, 9 },
+            { 10, 11, 12 } }
+    };
+
+    t = t.cuda();
+    auto shape = std::vector<size_t> { 2, 2, 3 };
+
+    ASSERT_EQ(t.shape(), shape);
+    ASSERT_EQ(t.numel(), 12);
+
+    ASSERT_EQ(t(0, 0, 1).item<i32>(), 2);
+    ASSERT_EQ(t(0, 1, 2).item<i32>(), 6);
+    ASSERT_EQ(t(1, 0, 0).item<i32>(), 7);
+}
 #endif
