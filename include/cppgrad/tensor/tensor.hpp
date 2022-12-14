@@ -572,7 +572,8 @@ public:
             return true;
         }
 
-        return std::is_sorted(strides().rbegin(), strides().rend());
+        // second condition required for 1dim tensors mostly
+        return std::is_sorted(strides().rbegin(), strides().rend()) && *strides().rbegin() == dtype_size(dtype());
     }
 
     ~Tensor()
