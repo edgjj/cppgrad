@@ -78,4 +78,25 @@ TEST(TensorCUDATests, AssignTensorMultidimensional)
     ASSERT_EQ(t(0, 1, 2).item<i32>(), 6);
     ASSERT_EQ(t(1, 0, 0).item<i32>(), 7);
 }
+
+TEST(TensorCUDATests, AssignTesnorTransposedToContiguous)
+{
+    Tensor t1 = Tensor {
+        { 1, 2, 3 },
+        { 4, 5, 6 },
+        { 7, 8, 9 }
+    }.cuda();
+
+    Tensor t2 = Tensor {
+        { 9, 8, 7 },
+        { 6, 5, 4 },
+        { 3, 2, 1 }
+    }.cuda();
+
+    t1[0] = t2.T()[0];
+
+    ASSERT_EQ(t1(0, 0).item<i32>(), 9);
+    ASSERT_EQ(t1(0, 1).item<i32>(), 6);
+    ASSERT_EQ(t1(0, 2).item<i32>(), 3);
+}
 #endif

@@ -21,20 +21,14 @@ namespace impl {
     }
 
     template <typename T>
-    static void strided_copy_copier(std::byte* from,
-        std::byte* to,
+    static void strided_copy_copier(T* from,
+        T* to,
         size_t count,
         size_t from_stride,
         size_t to_stride)
     {
-        auto* from_ptr = reinterpret_cast<T*>(from);
-        auto* to_ptr = reinterpret_cast<T*>(to);
-
-        from_stride /= sizeof(T);
-        to_stride /= sizeof(T);
-
         for (size_t i = 0; i < count; i++) {
-            to_ptr[i * to_stride] = from_ptr[i * from_stride];
+            to[i * to_stride] = from[i * from_stride];
         }
     }
 
@@ -47,7 +41,12 @@ namespace impl {
         size_t shape_size)
     {
         if (shape_size == 1) {
-            strided_copy_copier<T>(from, to, *shape, *from_strides, *to_strides);
+            strided_copy_copier<T>(reinterpret_cast<T*>(from),
+                reinterpret_cast<T*>(to),
+                *shape,
+                *from_strides / sizeof(T),
+                *to_strides / sizeof(T));
+
             return;
         }
 

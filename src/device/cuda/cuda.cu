@@ -41,7 +41,7 @@ void CUDA::strided_copy(std::byte* from,
     const std::vector<size_t>& from_strides,
     const std::vector<size_t>& to_strides)
 {
-    FOREACH_TYPE(type, impl::strided_copy_impl, from, to, shape.data(), to_strides.data(), from_strides.data(), shape.size());
+    FOREACH_TYPE(type, impl::strided_copy_impl, from, to, shape.data(), from_strides.data(), to_strides.data(), shape.size());
 }
 
 void CUDA::copy_from_host(std::byte* from, std::byte* to, std::size_t count)
