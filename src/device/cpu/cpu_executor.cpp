@@ -1,4 +1,5 @@
 #include "cppgrad/device/cpu/cpu_executor.hpp"
+#include "cppgrad/tensor/tensor.hpp"
 
 #include <algorithm>
 #include <cstring>
@@ -60,19 +61,21 @@ void CPUExecutor::copy(std::byte* from, std::byte* to, std::size_t count, CopyTy
     std::memcpy(to, from, count);
 }
 
-void CPUExecutor::strided_copy(std::byte* from,
-    std::byte* to,
-    DType type,
-    const std::vector<size_t>& shape,
-    const std::vector<size_t>& from_strides,
-    const std::vector<size_t>& to_strides)
+void CPUExecutor::strided_copy(const Tensor& from, Tensor& to)
 {
-    FOREACH_TYPE(type, impl::strided_copy_impl, from, to, shape.data(), from_strides.data(), to_strides.data(), shape.size());
+    FOREACH_TYPE(from.dtype(),
+        impl::strided_copy_impl,
+        from.data(),
+        to.data(),
+        from.shape().data(),
+        from.strides().data(),
+        to.strides().data(),
+        from.shape().size());
 }
 
-void CPUExecutor::fill(std::byte* pos, std::byte* value, DType type, std::size_t count)
+void CPUExecutor::fill(Tensor& tensor, std::byte* value)
 {
-    FOREACH_TYPE(type, impl::fill_impl, pos, value, count);
+    FOREACH_TYPE(tensor.dtype(), impl::fill_impl, tensor.data(), value, tensor.numel());
 }
 
 }

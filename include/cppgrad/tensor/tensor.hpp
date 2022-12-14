@@ -64,7 +64,7 @@ public:
         if (is_contiguous() && other.is_contiguous()) {
             executor().copy(other.data(), data(), nbytes());
         } else {
-            executor().strided_copy(nullptr, nullptr, dtype(), shape(), other.strides(), strides());
+            executor().strided_copy(other, *this);
         }
 
         return *this;
@@ -105,7 +105,7 @@ public:
         if (is_contiguous() && other.is_contiguous()) {
             executor().copy(other.data(), data(), nbytes());
         } else {
-            executor().strided_copy(other.data(), data(), dtype(), shape(), other.strides(), strides());
+            executor().strided_copy(other, *this);
         }
 
         return *this;
@@ -263,7 +263,7 @@ public:
             rtype_v<T>, _storage->_type_id);
 
         auto* byte_ptr = reinterpret_cast<std::byte*>(&value);
-        executor().fill(data(), byte_ptr, dtype(), count);
+        executor().fill(*this, byte_ptr);
     }
 
     /**

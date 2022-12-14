@@ -4,8 +4,8 @@
 #include "cppgrad/tensor/tensor_fwd.hpp"
 #include "cppgrad/tensor/typing.hpp"
 
-#include <vector>
 #include <cstddef>
+#include <vector>
 
 namespace cppgrad::impl {
 
@@ -26,38 +26,28 @@ struct Executor {
      * @param copy_type copy type, see enum CopyType
      */
     virtual void copy(std::byte* from, std::byte* to,
-        std::size_t count, 
-        CopyType copy_type = impl::Homogeneous) = 0;
+        std::size_t count,
+        CopyType copy_type = impl::Homogeneous)
+        = 0;
 
     /**
      * @brief Strided row-major copy routine
      *
-     * @param from source data chunk
-     * @param to destination data chunk
-     * @param type data DType
-     * @param shape data shape
-     * @param to_strides dest data strides
-     * @param from_strides src data strides
+     * @param from source Tensor
+     * @param to destination Tensor
      */
-    virtual void strided_copy(std::byte* from, std::byte* to,
-        DType type,
-        const std::vector<size_t>& shape,
-        const std::vector<size_t>& from_strides,
-        const std::vector<size_t>& to_strides)
-        = 0;
+    virtual void strided_copy(const Tensor& from, Tensor& to) = 0;
 
     // TODO: think about using this for assigning scalars/vectors without using intermediate Tensors.
     // virtual void assign(std::byte* pos, std::byte* value, DType type, std::size_t count) = 0;
 
     /**
-     * @brief Assigns value of given DType to each chunk element
+     * @brief Assigns value of given DType to each Tensor element
      *
-     * @param pos pointer to chunk/position
+     * @param tensor tensor to fill
      * @param value pointer to value
-     * @param type data DType
-     * @param count size in elements
      */
-    virtual void fill(std::byte* pos, std::byte* value, DType type, std::size_t count) = 0;
+    virtual void fill(Tensor& tensor, std::byte* value) = 0;
 };
 
 }

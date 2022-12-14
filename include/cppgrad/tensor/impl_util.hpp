@@ -27,7 +27,7 @@ namespace impl {
      * @param type_size Requested tensor type size in bytes
      * @return std::vector<size_t> Strides
      */
-    std::vector<size_t> make_strides(std::vector<size_t> shape, size_t type_size)
+    static std::vector<size_t> make_strides(std::vector<size_t> shape, size_t type_size)
     {
         std::vector<size_t> strides(shape.size());
         size_t accum = type_size;
