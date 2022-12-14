@@ -47,9 +47,15 @@ struct Device {
      * @param to destination data chunk
      * @param type data DType
      * @param shape data shape
-     * @param strides data strides
+     * @param to_strides dest data strides
+     * @param from_strides src data strides
      */
-    virtual void strided_copy(std::byte* from, std::byte* to, DType type, const std::vector<size_t>& shape, const std::vector<size_t>& strides) = 0;
+    virtual void strided_copy(std::byte* from, std::byte* to,
+        DType type,
+        const std::vector<size_t>& shape,
+        const std::vector<size_t>& from_strides,
+        const std::vector<size_t>& to_strides)
+        = 0;
 
     // TODO: think about using this for assigning scalars/vectors without using intermediate Tensors.
     // virtual void assign(std::byte* pos, std::byte* value, DType type, std::size_t count) = 0;

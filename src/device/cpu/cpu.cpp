@@ -21,13 +21,43 @@ namespace impl {
     }
 
     template <typename T>
-    static void strided_copy_impl(std::byte* from, std::byte* to, const std::vector<size_t>& shape, const std::vector<size_t>& strides)
+    static void strided_copy_copier(std::byte* from,
+        std::byte* to,
+        size_t count,
+        size_t from_stride,
+        size_t to_stride)
     {
         auto* from_ptr = reinterpret_cast<T*>(from);
         auto* to_ptr = reinterpret_cast<T*>(to);
 
-        throw std::exception();
-        // do something
+        from_stride /= sizeof(T);
+        to_stride /= sizeof(T);
+
+        for (size_t i = 0; i < count; i++) {
+            to_ptr[i * to_stride] = from_ptr[i * from_stride];
+        }
+    }
+
+    template <typename T>
+    static void strided_copy_impl(std::byte* from,
+        std::byte* to,
+        const size_t* shape,
+        const size_t* from_strides,
+        const size_t* to_strides,
+        size_t shape_size)
+    {
+        if (shape_size == 1) {
+            strided_copy_copier<T>(from, to, *shape, *from_strides, *to_strides);
+            return;
+        }
+
+        while (shape_size != 1) {
+            strided_copy_impl<T>(from + *from_strides, to + *to_strides,
+                ++shape,
+                ++from_strides,
+                ++to_strides,
+                --shape_size);
+        }
     }
 }
 
@@ -51,9 +81,14 @@ void CPU::copy(std::byte* from, std::byte* to, std::size_t count)
     std::memcpy(to, from, count);
 }
 
-void CPU::strided_copy(std::byte* from, std::byte* to, DType type, const std::vector<size_t>& shape, const std::vector<size_t>& strides)
+void CPU::strided_copy(std::byte* from,
+    std::byte* to,
+    DType type,
+    const std::vector<size_t>& shape,
+    const std::vector<size_t>& from_strides,
+    const std::vector<size_t>& to_strides)
 {
-    FOREACH_TYPE(type, impl::strided_copy_impl, from, to, shape, strides);
+    FOREACH_TYPE(type, impl::strided_copy_impl, from, to, shape.data(), from_strides.data(), to_strides.data(), shape.size());
 }
 
 // void CPU::assign(std::byte* pos, std::byte* value, DType type, std::size_t count)

@@ -16,7 +16,11 @@ namespace impl {
     }
 
     template <typename T>
-    static void strided_copy_impl(std::byte* from, std::byte* to, const std::vector<size_t>& shape, const std::vector<size_t>& strides)
+    static void strided_copy_impl(std::byte* from,
+        std::byte* to,
+        const size_t* shape,
+        const size_t* from_strides,
+        const size_t* to_strides, size_t shape_size)
     {
         throw std::exception();
 

@@ -64,7 +64,7 @@ public:
         if (is_contiguous() && other.is_contiguous()) {
             device()->copy(other.data(), data(), nbytes());
         } else {
-            device()->strided_copy(nullptr, nullptr, dtype(), shape(), strides());
+            device()->strided_copy(nullptr, nullptr, dtype(), shape(), other.strides(), strides());
         }
 
         return *this;
@@ -105,7 +105,7 @@ public:
         if (is_contiguous() && other.is_contiguous()) {
             device()->copy(other.data(), data(), nbytes());
         } else {
-            device()->strided_copy(other.data(), data(), dtype(), shape(), strides());
+            device()->strided_copy(other.data(), data(), dtype(), shape(), other.strides(), strides());
         }
 
         return *this;

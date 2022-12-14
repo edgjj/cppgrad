@@ -34,9 +34,14 @@ void CUDA::copy(std::byte* from, std::byte* to, std::size_t count)
     cudaMemcpy(to, from, count, cudaMemcpyKind::cudaMemcpyDeviceToDevice);
 }
 
-void CUDA::strided_copy(std::byte* from, std::byte* to, DType type, const std::vector<size_t>& shape, const std::vector<size_t>& strides)
+void CUDA::strided_copy(std::byte* from,
+    std::byte* to,
+    DType type,
+    const std::vector<size_t>& shape,
+    const std::vector<size_t>& from_strides,
+    const std::vector<size_t>& to_strides)
 {
-    FOREACH_TYPE(type, impl::strided_copy_impl, from, to, shape, strides);
+    FOREACH_TYPE(type, impl::strided_copy_impl, from, to, shape.data(), to_strides.data(), from_strides.data(), shape.size());
 }
 
 void CUDA::copy_from_host(std::byte* from, std::byte* to, std::size_t count)
