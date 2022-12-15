@@ -1,4 +1,10 @@
+#include <algorithm> // std::is_sorted
+
+#include "cppgrad/exceptions/generic_error.hpp"
+#include "cppgrad/exceptions/type_error.hpp"
 #include "cppgrad/tensor/tensor.hpp"
+
+#include "cppgrad/device/cuda/cuda.hpp"
 
 namespace cppgrad {
 

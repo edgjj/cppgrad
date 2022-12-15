@@ -1,7 +1,6 @@
 #ifndef CPPGRAD_TENSOR_HPP
 #define CPPGRAD_TENSOR_HPP
 
-#include <algorithm> // std::is_sorted
 #include <memory> // std::shared_ptr
 #include <type_traits> // std::enable_if
 #include <vector> // std::vector
@@ -9,15 +8,12 @@
 #include <numeric> // std::reduce
 
 #include "cppgrad/device/cpu/cpu.hpp"
-#include "cppgrad/device/cuda/cuda.hpp"
 
 #include "cppgrad/tensor/impl.hpp"
 #include "cppgrad/tensor/impl_util.hpp"
 
 // exceptions
-#include "cppgrad/exceptions/generic_error.hpp"
 #include "cppgrad/exceptions/index_error.hpp"
-#include "cppgrad/exceptions/type_error.hpp"
 
 namespace cppgrad {
 
@@ -64,9 +60,6 @@ public:
         std::vector<size_t> shape = {},
         size_t alignment = alignof(dtype_t<DataType>))
     {
-        CPPGRAD_CHECK_FALSE(blob == nullptr,
-            exceptions::GenericError,
-            "Caught nullptr blob.");
 
         auto result = create_dirty<DeviceType>(shape, DataType, alignment);
         constexpr size_t type_sz = sizeof(dtype_t<DataType>);
