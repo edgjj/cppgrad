@@ -25,7 +25,7 @@ Tensor& Tensor::operator=(const Tensor& other)
         exceptions::GenericError,
         "Assign (move) DType mismatch");
 
-    CPPGRAD_CHECK_EQ(device()->type(), other.device()->type(),
+    CPPGRAD_CHECK_EQ(device().type(), other.device().type(),
         exceptions::GenericError,
         "Assign (move) Device type mismatch");
 
@@ -65,7 +65,7 @@ Tensor& Tensor::operator=(Tensor&& other)
         return move_storage();
     }
 
-    CPPGRAD_CHECK_EQ(device()->type(), other.device()->type(),
+    CPPGRAD_CHECK_EQ(device().type(), other.device().type(),
         exceptions::GenericError,
         "Assign (move) Device type mismatch");
 
@@ -228,9 +228,9 @@ Tensor Tensor::T()
     return result;
 }
 
-Device* Tensor::device() const
+Device& Tensor::device() const
 {
-    return base_storage()->_device;
+    return *base_storage()->_device;
 }
 
 #ifdef CPPGRAD_HAS_CUDA
@@ -346,7 +346,7 @@ const std::shared_ptr<impl::TensorData>& Tensor::base_storage() const
 
 impl::Executor& Tensor::executor()
 {
-    return device()->get_executor();
+    return device().get_executor();
 }
 
 Tensor::Tensor(std::shared_ptr<impl::TensorData> base_storage)

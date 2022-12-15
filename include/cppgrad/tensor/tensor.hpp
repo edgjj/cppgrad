@@ -15,6 +15,10 @@
 // exceptions
 #include "cppgrad/exceptions/index_error.hpp"
 
+// ops
+#include "cppgrad/tensor/ops/binary_ops.hpp"
+#include "cppgrad/tensor/ops/unary_ops.hpp"
+
 namespace cppgrad {
 
 /*
@@ -284,7 +288,13 @@ public:
      */
     Tensor T();
 
-    Device* device() const;
+    /**
+     * @brief Returns reference to corresponding Tensor device
+     * UB if Tensor has no device somehow.
+     *
+     * @return Device&
+     */
+    Device& device() const;
 
     /**
      * @brief Checks if current Tensor data is located on CUDA device.
