@@ -50,8 +50,8 @@ struct Executor {
     // virtual void sub(Tensor& lhs, Tensor& rhs, Tensor& dst) = 0;
     // virtual void mul(Tensor& lhs, Tensor& rhs, Tensor& dst) = 0;
     // virtual void matmul(Tensor& lhs, Tensor& rhs, Tensor& dst) = 0;
-    // virtual void relu(Tensor& lhs, Tensor& rhs, Tensor& dst) = 0;
-    // virtual void tanh(Tensor& lhs, Tensor& rhs, Tensor& dst) = 0;
+    // virtual void relu(Tensor& lhs, Tensor& dst) = 0;
+    // virtual void tanh(Tensor& lhs, Tensor& dst) = 0;
     // virtual void cmp(Tensor& lhs, Tensor& rhs, Tensor& dst, CompareType cmp_type) = 0;
 };
 

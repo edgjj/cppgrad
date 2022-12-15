@@ -38,6 +38,7 @@ list(APPEND CPPGRAD_HDR ${CPPGRAD_DEVICE_INCLUDES})
 file (GLOB
 	CPPGRAD_SRC
 	src/*.cpp
+	src/tensor/*.cpp
 )
 
 add_library (cppgrad 
