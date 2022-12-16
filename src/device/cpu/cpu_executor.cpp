@@ -3,10 +3,9 @@
 #include "cppgrad/tensor/tensor.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <cstring>
 #include <tuple>
-
-#include <immintrin.h>
 
 namespace cppgrad::impl {
 
@@ -127,6 +126,41 @@ void CPUExecutor::mul(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 
         for (size_t k = 0; k < dst.numel(); k++) {
             out[k] = p1[k] * p2[k];
+        }
+    };
+
+    for_each_type(std::move(fn), dst.dtype());
+}
+
+void CPUExecutor::pow(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
+{
+    auto fn = [&](auto tag) {
+        using Type = decltype(tag);
+        auto p1 = reinterpret_cast<const Type*>(lhs.data());
+        auto p2 = reinterpret_cast<const Type*>(rhs.data());
+
+        auto out = reinterpret_cast<Type*>(dst.data());
+
+        for (size_t k = 0; k < dst.numel(); k++) {
+            out[k] = std::pow(p1[k], p2[k]);
+        }
+    };
+
+    for_each_type(std::move(fn), dst.dtype());
+}
+
+void CPUExecutor::dot(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
+{
+    auto fn = [&](auto tag) {
+        using Type = decltype(tag);
+        auto p1 = reinterpret_cast<const Type*>(lhs.data());
+        auto p2 = reinterpret_cast<const Type*>(rhs.data());
+
+        auto out = reinterpret_cast<Type*>(dst.data());
+        *out = Type(0);
+
+        for (size_t k = 0; k < dst.numel(); k++) {
+            out[k] += p1[k] * p2[k];
         }
     };
 

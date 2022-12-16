@@ -58,7 +58,9 @@ struct Executor {
     virtual void sum(const Tensor& lhs, const Tensor& rhs, Tensor& dst) = 0;
     virtual void sub(const Tensor& lhs, const Tensor& rhs, Tensor& dst) = 0;
     virtual void mul(const Tensor& lhs, const Tensor& rhs, Tensor& dst) = 0;
+    virtual void pow(const Tensor& lhs, const Tensor& rhs, Tensor& dst) = 0;
     virtual void matmul(const Tensor& lhs, const Tensor& rhs, Tensor& dst) = 0;
+    virtual void dot(const Tensor& lhs, const Tensor& rhs, Tensor& dst) = 0;
     virtual void relu(const Tensor& lhs, Tensor& dst) = 0;
     virtual void tanh(const Tensor& lhs, Tensor& dst) = 0;
     virtual void cmp(const Tensor& lhs, const Tensor& rhs, Tensor& dst, CompareType cmp_type) = 0;

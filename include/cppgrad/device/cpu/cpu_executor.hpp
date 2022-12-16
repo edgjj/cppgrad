@@ -5,7 +5,7 @@
 
 namespace cppgrad::impl {
 
-/// @brief for reference it's AVX2 accelerated by default,
+/// @brief for reference it's naive by default,
 /// to be splitted into multiple CPU (SSE4/AVX/AVX2) backends
 struct CPUExecutor : Executor {
 
@@ -17,6 +17,8 @@ struct CPUExecutor : Executor {
     void sum(const Tensor& lhs, const Tensor& rhs, Tensor& dst) override;
     void sub(const Tensor& lhs, const Tensor& rhs, Tensor& dst) override;
     void mul(const Tensor& lhs, const Tensor& rhs, Tensor& dst) override;
+    void pow(const Tensor& lhs, const Tensor& rhs, Tensor& dst) override;
+    void dot(const Tensor& lhs, const Tensor& rhs, Tensor& dst) override;
     void matmul(const Tensor& lhs, const Tensor& rhs, Tensor& dst) override;
     void relu(const Tensor& lhs, Tensor& dst) override;
     void tanh(const Tensor& lhs, Tensor& dst) override;

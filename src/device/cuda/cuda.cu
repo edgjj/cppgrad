@@ -23,7 +23,6 @@ std::byte* CUDA::allocate(std::size_t count, std::align_val_t alignment)
 
 void CUDA::deallocate(std::byte* ptr, std::align_val_t alignment)
 {
-    cudaDeviceSynchronize();
     cudaFree(ptr);
 }
 

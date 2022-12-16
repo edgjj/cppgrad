@@ -85,6 +85,14 @@ void CUDAExecutor::mul(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
     for_each_type(std::move(fn), dst.dtype());
 }
 
+void CUDAExecutor::pow(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
+{
+}
+
+void CUDAExecutor::dot(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
+{
+}
+
 void CUDAExecutor::matmul(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 {
     // matrix mul
