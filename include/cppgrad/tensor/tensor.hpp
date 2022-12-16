@@ -324,7 +324,14 @@ public:
      *
      * @return Tensor
      */
-    Tensor clone();
+    Tensor clone() const;
+
+    /**
+     * @brief Makes new Tensor from current, with data stored contiguous
+     *
+     * @return Tensor
+     */
+    Tensor contiguous() const;
 
     /**
      * @brief Determines if Tensor is view onto other Tensor
@@ -380,7 +387,7 @@ private:
      *
      * @return impl::Executor&
      */
-    impl::Executor& executor();
+    impl::Executor& executor() const;
 
     /**
      * @brief Construct a new Tensor object from parent's TensorData.

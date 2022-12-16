@@ -293,10 +293,25 @@ Tensor Tensor::cuda()
 }
 #endif
 
-Tensor Tensor::clone()
+Tensor Tensor::clone() const
 {
     auto new_tensor = create_dirty(shape(), dtype(), get_align(), device().clone());
+    // copy strides to be the same
+    new_tensor._storage->_strides = _storage->_strides;
     executor().copy(data(), new_tensor.data(), nbytes());
+
+    return new_tensor;
+}
+
+Tensor Tensor::contiguous() const
+{
+    // just return copy
+    if (is_contiguous()) {
+        return *this;
+    }
+
+    auto new_tensor = create_dirty(shape(), dtype(), get_align(), device().clone());
+    executor().strided_copy(*this, new_tensor);
 
     return new_tensor;
 }
@@ -362,7 +377,7 @@ const std::shared_ptr<impl::TensorData>& Tensor::base_storage() const
     return actual_storage;
 }
 
-impl::Executor& Tensor::executor()
+impl::Executor& Tensor::executor() const
 {
     return device().get_executor();
 }

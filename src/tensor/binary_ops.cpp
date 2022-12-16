@@ -36,39 +36,24 @@ namespace {
 
 Tensor operator+(const Tensor& lhs, const Tensor& rhs)
 {
-    check_op_generic(lhs, rhs);
-    check_op_elementwise(lhs, rhs);
-
-    auto out = Tensor::create_dirty(lhs.shape(), lhs.dtype(), lhs.get_align(), lhs.device().clone());
-    auto& executor = out.device().get_executor();
-
-    executor.sum(lhs, rhs, out);
+    auto out = lhs.clone();
+    out += rhs;
 
     return out;
 }
 
 Tensor operator-(const Tensor& lhs, const Tensor& rhs)
 {
-    check_op_generic(lhs, rhs);
-    check_op_elementwise(lhs, rhs);
-
-    auto out = Tensor::create_dirty(lhs.shape(), lhs.dtype(), lhs.get_align(), lhs.device().clone());
-    auto& executor = out.device().get_executor();
-
-    executor.sub(lhs, rhs, out);
+    auto out = lhs.clone();
+    out -= rhs;
 
     return out;
 }
 
 Tensor operator*(const Tensor& lhs, const Tensor& rhs)
 {
-    check_op_generic(lhs, rhs);
-    check_op_elementwise(lhs, rhs);
-
-    auto out = Tensor::create_dirty(lhs.shape(), lhs.dtype(), lhs.get_align(), lhs.device().clone());
-    auto& executor = out.device().get_executor();
-
-    executor.mul(lhs, rhs, out);
+    auto out = lhs.clone();
+    out *= rhs;
 
     return out;
 }
