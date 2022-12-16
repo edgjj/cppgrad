@@ -141,14 +141,8 @@ void CPUExecutor::pow(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 
         auto out = reinterpret_cast<Type*>(dst.data());
 
-        if (rhs.numel() == 1) {
-            for (size_t k = 0; k < dst.numel(); k++) {
-                out[k] = std::pow(p1[k], *p2);
-            }
-        } else {
-            for (size_t k = 0; k < dst.numel(); k++) {
-                out[k] = std::pow(p1[k], p2[k]);
-            }
+        for (size_t k = 0; k < dst.numel(); k++) {
+            out[k] = std::pow(p1[k], p2[k]);
         }
     };
 

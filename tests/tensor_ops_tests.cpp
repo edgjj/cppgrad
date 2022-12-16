@@ -61,6 +61,21 @@ TEST(TensorOpsTests, DotTest)
     ASSERT_EQ(t3.item<i32>(), 849);
 }
 
+TEST(TensorOpsTests, PowTest)
+{
+    Tensor t1 = { 2, 3, 4, 5, 6, 7 };
+    Tensor t2 = { 5, 5, 5, 5, 5, 5 };
+
+    auto t3 = cppgrad::pow(t1, t2);
+
+    ASSERT_EQ(t3[0].item<i32>(), std::pow(2, 5));
+    ASSERT_EQ(t3[1].item<i32>(), std::pow(3, 5));
+    ASSERT_EQ(t3[2].item<i32>(), std::pow(4, 5));
+    ASSERT_EQ(t3[3].item<i32>(), std::pow(5, 5));
+    ASSERT_EQ(t3[4].item<i32>(), std::pow(6, 5));
+    ASSERT_EQ(t3[5].item<i32>(), std::pow(7, 5));
+}
+
 TEST(TensorOpsTests, MatmulTestEqShape)
 {
     Tensor t1 = {
