@@ -11,6 +11,7 @@ struct CPU : Device {
     void deallocate(std::byte* ptr, std::align_val_t alignment) override;
 
     impl::Executor& get_executor() override;
+    Device* clone() override;
 
     std::string_view type() override;
 };

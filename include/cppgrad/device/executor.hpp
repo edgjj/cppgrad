@@ -15,6 +15,15 @@ enum CopyType {
     DeviceToHost = 4
 };
 
+enum CompareType {
+    GT, // greater than
+    LT, // less than
+    GE, // greater than or equal
+    LE, // less than or equal
+    EQ, // equal
+    NE, // not equal
+};
+
 struct Executor {
     /**
      * @brief Non-strided copy routine. Shouldn't be used with non-contiguous chunks.
@@ -25,7 +34,7 @@ struct Executor {
      * @param count size in bytes
      * @param copy_type copy type, see enum CopyType
      */
-    virtual void copy(std::byte* from, std::byte* to,
+    virtual void copy(const std::byte* from, std::byte* to,
         std::size_t count,
         CopyType copy_type = impl::Homogeneous)
         = 0;
@@ -46,13 +55,13 @@ struct Executor {
      */
     virtual void fill(Tensor& tensor, std::byte* value) = 0;
 
-    // virtual void sum(Tensor& lhs, Tensor& rhs, Tensor& dst) = 0;
-    // virtual void sub(Tensor& lhs, Tensor& rhs, Tensor& dst) = 0;
-    // virtual void mul(Tensor& lhs, Tensor& rhs, Tensor& dst) = 0;
-    // virtual void matmul(Tensor& lhs, Tensor& rhs, Tensor& dst) = 0;
-    // virtual void relu(Tensor& lhs, Tensor& dst) = 0;
-    // virtual void tanh(Tensor& lhs, Tensor& dst) = 0;
-    // virtual void cmp(Tensor& lhs, Tensor& rhs, Tensor& dst, CompareType cmp_type) = 0;
+    virtual void sum(const Tensor& lhs, const Tensor& rhs, Tensor& dst) = 0;
+    virtual void sub(const Tensor& lhs, const Tensor& rhs, Tensor& dst) = 0;
+    virtual void mul(const Tensor& lhs, const Tensor& rhs, Tensor& dst) = 0;
+    virtual void matmul(const Tensor& lhs, const Tensor& rhs, Tensor& dst) = 0;
+    virtual void relu(const Tensor& lhs, Tensor& dst) = 0;
+    virtual void tanh(const Tensor& lhs, Tensor& dst) = 0;
+    virtual void cmp(const Tensor& lhs, const Tensor& rhs, Tensor& dst, CompareType cmp_type) = 0;
 };
 
 }

@@ -8,7 +8,7 @@ namespace cppgrad {
 namespace impl {
 
     template <typename T>
-    __global__ void strided_copy_kernel(T* from,
+    __global__ void strided_copy_kernel(const T* from,
         T* to,
         size_t count,
         size_t from_stride,
@@ -21,7 +21,7 @@ namespace impl {
     }
 
     template <typename T>
-    static void strided_copy_impl(std::byte* from,
+    static void strided_copy_impl(const std::byte* from,
         std::byte* to,
         const size_t* shape,
         const size_t* from_strides,
@@ -30,7 +30,7 @@ namespace impl {
     {
         if (shape_size == 1) {
             CPPGRAD_CUDA_LAUNCH(strided_copy_kernel, *shape)
-            (reinterpret_cast<T*>(from),
+            (reinterpret_cast<const T*>(from),
                 reinterpret_cast<T*>(to),
                 *shape,
                 *from_strides / sizeof(T),

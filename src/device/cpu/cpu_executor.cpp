@@ -1,8 +1,12 @@
 #include "cppgrad/device/cpu/cpu_executor.hpp"
+#include "cppgrad/exceptions/generic_error.hpp"
 #include "cppgrad/tensor/tensor.hpp"
 
 #include <algorithm>
 #include <cstring>
+#include <tuple>
+
+#include <immintrin.h>
 
 namespace cppgrad::impl {
 
@@ -17,7 +21,7 @@ static void fill_impl(std::byte* pos, std::byte* value, std::size_t count)
 }
 
 template <typename T>
-static void strided_copy_copier(T* from,
+static void strided_copy_copier(const T* from,
     T* to,
     size_t count,
     size_t from_stride,
@@ -29,7 +33,7 @@ static void strided_copy_copier(T* from,
 }
 
 template <typename T>
-static void strided_copy_impl(std::byte* from,
+static void strided_copy_impl(const std::byte* from,
     std::byte* to,
     const size_t* shape,
     const size_t* from_strides,
@@ -37,7 +41,7 @@ static void strided_copy_impl(std::byte* from,
     size_t shape_size)
 {
     if (shape_size == 1) {
-        strided_copy_copier<T>(reinterpret_cast<T*>(from),
+        strided_copy_copier<T>(reinterpret_cast<const T*>(from),
             reinterpret_cast<T*>(to),
             *shape,
             *from_strides / sizeof(T),
@@ -55,7 +59,7 @@ static void strided_copy_impl(std::byte* from,
     }
 }
 
-void CPUExecutor::copy(std::byte* from, std::byte* to, std::size_t count, CopyType copy_type)
+void CPUExecutor::copy(const std::byte* from, std::byte* to, std::size_t count, CopyType copy_type)
 {
     // ignore copy_type as it's CPU
     std::memcpy(to, from, count);
@@ -76,6 +80,105 @@ void CPUExecutor::strided_copy(const Tensor& from, Tensor& to)
 void CPUExecutor::fill(Tensor& tensor, std::byte* value)
 {
     FOREACH_TYPE(tensor.dtype(), impl::fill_impl, tensor.data(), value, tensor.numel());
+}
+
+void CPUExecutor::sum(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
+{
+    auto fn = [&](auto tag) {
+        using Type = decltype(tag);
+        auto p1 = reinterpret_cast<const Type*>(lhs.data());
+        auto p2 = reinterpret_cast<const Type*>(rhs.data());
+
+        auto out = reinterpret_cast<Type*>(dst.data());
+
+        for (size_t k = 0; k < dst.numel(); k++) {
+            out[k] = p1[k] + p2[k];
+        }
+    };
+
+    for_each_type(std::move(fn), dst.dtype());
+}
+
+void CPUExecutor::sub(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
+{
+    auto fn = [&](auto tag) {
+        using Type = decltype(tag);
+        auto p1 = reinterpret_cast<const Type*>(lhs.data());
+        auto p2 = reinterpret_cast<const Type*>(rhs.data());
+
+        auto out = reinterpret_cast<Type*>(dst.data());
+
+        for (size_t k = 0; k < dst.numel(); k++) {
+            out[k] = p1[k] - p2[k];
+        }
+    };
+
+    for_each_type(std::move(fn), dst.dtype());
+}
+
+void CPUExecutor::mul(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
+{
+    auto fn = [&](auto tag) {
+        using Type = decltype(tag);
+        auto p1 = reinterpret_cast<const Type*>(lhs.data());
+        auto p2 = reinterpret_cast<const Type*>(rhs.data());
+
+        auto out = reinterpret_cast<Type*>(dst.data());
+
+        for (size_t k = 0; k < dst.numel(); k++) {
+            out[k] = p1[k] * p2[k];
+        }
+    };
+
+    for_each_type(std::move(fn), dst.dtype());
+}
+
+void CPUExecutor::matmul(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
+{
+    // matrix mul
+    if (dst.shape().size() == 2) {
+        auto fn = [&](auto tag) {
+            using Type = decltype(tag);
+            auto p1 = reinterpret_cast<const Type*>(lhs.data());
+            auto p2 = reinterpret_cast<const Type*>(rhs.data());
+
+            auto out = reinterpret_cast<Type*>(dst.data());
+
+            for (size_t k = 0; k < dst.shape()[0]; k++) {
+                for (size_t i = 0; i < dst.shape()[1]; k++) {
+                }
+            }
+
+            for (size_t k = 0; k < dst.numel(); k++) {
+                out[k] = p1[k] * p2[k];
+            }
+        };
+        for_each_type(std::move(fn), dst.dtype());
+    } else if (dst.shape().size() == 1) { // dot product
+        auto fn = [&](auto tag) {
+            using Type = decltype(tag);
+            auto p1 = reinterpret_cast<const Type*>(lhs.data());
+            auto p2 = reinterpret_cast<const Type*>(rhs.data());
+
+            auto out = reinterpret_cast<Type*>(dst.data());
+
+            for (size_t k = 0; k < dst.numel(); k++) {
+                *out += p1[k] * p2[k];
+            }
+        };
+    }
+}
+
+void CPUExecutor::relu(const Tensor& lhs, Tensor& dst)
+{
+}
+
+void CPUExecutor::tanh(const Tensor& lhs, Tensor& dst)
+{
+}
+
+void CPUExecutor::cmp(const Tensor& lhs, const Tensor& rhs, Tensor& dst, CompareType cmp_type)
+{
 }
 
 }

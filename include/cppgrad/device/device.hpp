@@ -44,6 +44,13 @@ struct Device {
      */
     virtual std::string_view type() = 0;
 
+    /**
+     * @brief Clones device
+     *
+     * @return Device*
+     */
+    virtual Device* clone() = 0;
+
     virtual ~Device() = default;
 };
 

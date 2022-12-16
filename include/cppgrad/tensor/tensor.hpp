@@ -42,7 +42,7 @@ public:
         dtype_t<DataType> fill_value = dtype_t<DataType> { 0 },
         size_t alignment = alignof(dtype_t<DataType>))
     {
-        auto result = create_dirty<DeviceType>(shape, DataType, alignment);
+        auto result = create_dirty(shape, DataType, alignment, new DeviceType());
         result.fill(fill_value, result.numel());
 
         return result;
@@ -64,8 +64,7 @@ public:
         std::vector<size_t> shape = {},
         size_t alignment = alignof(dtype_t<DataType>))
     {
-
-        auto result = create_dirty<DeviceType>(shape, DataType, alignment);
+        auto result = create_dirty(shape, DataType, alignment, new DeviceType());
         constexpr size_t type_sz = sizeof(dtype_t<DataType>);
 
         /**
@@ -135,16 +134,16 @@ public:
      *
      * Should be used for custom initialization routines.
      *
-     * @tparam DataType
-     * @tparam DeviceType
      * @param shape
+     * @param type
      * @param alignment
+     * @param device
      * @return Tensor
      */
-    template <typename DeviceType = CPU>
     static Tensor create_dirty(std::vector<size_t> shape,
         DType type,
-        size_t alignment)
+        size_t alignment,
+        Device* device)
     {
         auto type_size = dtype_size(type);
 
@@ -152,9 +151,6 @@ public:
         auto strides = impl::make_strides(shape, type_size);
 
         std::align_val_t align { alignment };
-
-        Device* device = new DeviceType();
-
         auto* chunk = device->allocate(total_elements * type_size, align);
 
         return Tensor(chunk,
@@ -236,7 +232,14 @@ public:
      *
      * @return std::byte* raw data pointer
      */
-    std::byte* data() const;
+    std::byte* data();
+
+    /**
+     * @brief Const version of data()
+     *
+     * @return const std::byte*
+     */
+    const std::byte* data() const;
 
     /**
      * @brief Tells whether tensor is empty or not.
@@ -328,6 +331,13 @@ public:
      *
      */
     bool is_contiguous() const;
+
+    /**
+     * @brief Get alignment of current Tensor
+     *
+     * @return size_t
+     */
+    size_t get_align() const;
 
     ~Tensor();
 

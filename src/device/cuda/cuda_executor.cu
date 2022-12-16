@@ -6,7 +6,7 @@
 
 namespace cppgrad::impl {
 
-void CUDAExecutor::copy(std::byte* from, std::byte* to, std::size_t count, CopyType copy_type)
+void CUDAExecutor::copy(const std::byte* from, std::byte* to, std::size_t count, CopyType copy_type)
 {
     cudaMemcpyKind kind;
 
@@ -44,6 +44,80 @@ void CUDAExecutor::fill(Tensor& tensor, std::byte* value)
         tensor.data(),
         value,
         tensor.numel());
+}
+
+void CUDAExecutor::sum(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
+{
+    auto fn = [&](auto tag) {
+        using Type = decltype(tag);
+        auto p1 = reinterpret_cast<const Type*>(lhs.data());
+        auto p2 = reinterpret_cast<const Type*>(rhs.data());
+
+        auto out = reinterpret_cast<Type*>(dst.data());
+    };
+
+    for_each_type(std::move(fn), dst.dtype());
+}
+
+void CUDAExecutor::sub(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
+{
+    auto fn = [&](auto tag) {
+        using Type = decltype(tag);
+        auto p1 = reinterpret_cast<const Type*>(lhs.data());
+        auto p2 = reinterpret_cast<const Type*>(rhs.data());
+
+        auto out = reinterpret_cast<Type*>(dst.data());
+    };
+
+    for_each_type(std::move(fn), dst.dtype());
+}
+
+void CUDAExecutor::mul(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
+{
+    auto fn = [&](auto tag) {
+        using Type = decltype(tag);
+        auto p1 = reinterpret_cast<const Type*>(lhs.data());
+        auto p2 = reinterpret_cast<const Type*>(rhs.data());
+
+        auto out = reinterpret_cast<Type*>(dst.data());
+    };
+
+    for_each_type(std::move(fn), dst.dtype());
+}
+
+void CUDAExecutor::matmul(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
+{
+    // matrix mul
+    if (dst.shape().size() == 2) {
+        auto fn = [&](auto tag) {
+            using Type = decltype(tag);
+            auto p1 = reinterpret_cast<const Type*>(lhs.data());
+            auto p2 = reinterpret_cast<const Type*>(rhs.data());
+
+            auto out = reinterpret_cast<Type*>(dst.data());
+        };
+        for_each_type(std::move(fn), dst.dtype());
+    } else if (dst.shape().size() == 1) { // dot product
+        auto fn = [&](auto tag) {
+            using Type = decltype(tag);
+            auto p1 = reinterpret_cast<const Type*>(lhs.data());
+            auto p2 = reinterpret_cast<const Type*>(rhs.data());
+
+            auto out = reinterpret_cast<Type*>(dst.data());
+        };
+    }
+}
+
+void CUDAExecutor::relu(const Tensor& lhs, Tensor& dst)
+{
+}
+
+void CUDAExecutor::tanh(const Tensor& lhs, Tensor& dst)
+{
+}
+
+void CUDAExecutor::cmp(const Tensor& lhs, const Tensor& rhs, Tensor& dst, CompareType cmp_type)
+{
 }
 
 }

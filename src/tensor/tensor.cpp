@@ -119,7 +119,7 @@ Tensor::Tensor(std::initializer_list<Tensor> values)
     shape.insert(shape.end(), base_shape.begin(), base_shape.end());
 
     auto align = (size_t)values.begin()->base_storage()->_alignment;
-    *this = create_dirty(shape, base_dtype, align);
+    *this = create_dirty(shape, base_dtype, align, new CPU());
 
     for (size_t i = 0; i < values.size(); i++) {
         (*this)(i) = *(values.begin() + i);
@@ -174,7 +174,12 @@ DType Tensor::dtype() const
     return base_storage()->_type_id;
 }
 
-std::byte* Tensor::data() const
+std::byte* Tensor::data()
+{
+    return _storage->_chunk;
+}
+
+const std::byte* Tensor::data() const
 {
     return _storage->_chunk;
 }
@@ -251,7 +256,7 @@ Tensor Tensor::cuda()
         return *this;
     }
 
-    auto new_tensor = create_dirty<CUDA>(shape(), dtype(), (size_t)_storage->_alignment);
+    auto new_tensor = create_dirty(shape(), dtype(), (size_t)_storage->_alignment, new CUDA());
     new_tensor.executor().copy(data(), new_tensor.data(), new_tensor.nbytes(), impl::HostToDevice);
 
     return new_tensor;
@@ -264,7 +269,7 @@ Tensor Tensor::cpu()
         return *this;
     }
 
-    auto new_tensor = create_dirty<CPU>(shape(), dtype(), (size_t)_storage->_alignment);
+    auto new_tensor = create_dirty(shape(), dtype(), (size_t)_storage->_alignment, new CPU());
     executor().copy(new_tensor.data(), data(), nbytes(), impl::DeviceToHost);
 
     return new_tensor;
@@ -301,6 +306,11 @@ bool Tensor::is_contiguous() const
 
     // second condition required for 1dim tensors mostly
     return std::is_sorted(strides().rbegin(), strides().rend()) && *strides().rbegin() == dtype_size(dtype());
+}
+
+size_t Tensor::get_align() const
+{
+    return (size_t)base_storage()->_alignment;
 }
 
 Tensor::~Tensor()

@@ -35,6 +35,11 @@ impl::Executor& CUDA::get_executor()
     return executor;
 }
 
+Device* CUDA::clone()
+{
+    return new CUDA();
+}
+
 std::string_view CUDA::type()
 {
     return "cuda"; // include device number there later like cuda:X

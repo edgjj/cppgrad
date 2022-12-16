@@ -29,6 +29,11 @@ impl::Executor& CPU::get_executor()
     return executor;
 }
 
+Device* CPU::clone()
+{
+    return new CPU();
+}
+
 std::string_view CPU::type()
 {
     return "cpu";
