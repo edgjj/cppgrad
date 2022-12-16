@@ -95,7 +95,7 @@ Tensor mm(const Tensor& lhs, const Tensor& rhs)
     check_op_generic(lhs, rhs);
 
     // if not matmul
-    if (lhs.shape() != rhs.shape() && lhs.shape().size() != 1) {
+    if (lhs.shape() != rhs.shape() || lhs.shape().size() != 1) {
         CPPGRAD_CHECK_EQ(lhs.shape()[0], rhs.shape()[1],
             exceptions::GenericError,
             "LHS rows size not eq to RHS cols");
@@ -114,6 +114,8 @@ Tensor mm(const Tensor& lhs, const Tensor& rhs)
         auto& executor = out.device().get_executor();
 
         executor.dot(lhs, rhs, out);
+
+        return out;
     }
 }
 
