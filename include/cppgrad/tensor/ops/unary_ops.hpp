@@ -5,6 +5,10 @@
 
 namespace cppgrad {
 
+Tensor& operator+=(Tensor& lhs, const Tensor& rhs);
+Tensor& operator-=(Tensor& lhs, const Tensor& rhs);
+Tensor& operator*=(Tensor& lhs, const Tensor& rhs);
+
 }
 
 #endif

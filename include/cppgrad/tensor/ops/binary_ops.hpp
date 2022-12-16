@@ -8,7 +8,6 @@ namespace cppgrad {
 Tensor operator+(const Tensor& lhs, const Tensor& rhs);
 Tensor operator-(const Tensor& lhs, const Tensor& rhs);
 Tensor operator*(const Tensor& lhs, const Tensor& rhs);
-Tensor operator*(const Tensor& lhs, const Tensor& rhs);
 Tensor pow(const Tensor& lhs, const Tensor& rhs);
 Tensor mm(const Tensor& lhs, const Tensor& rhs);
 

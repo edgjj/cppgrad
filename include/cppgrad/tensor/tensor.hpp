@@ -320,6 +320,13 @@ public:
     Tensor cpu();
 
     /**
+     * @brief Clones a Tensor.
+     *
+     * @return Tensor
+     */
+    Tensor clone();
+
+    /**
      * @brief Determines if Tensor is view onto other Tensor
      *
      */

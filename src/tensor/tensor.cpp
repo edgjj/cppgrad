@@ -293,6 +293,14 @@ Tensor Tensor::cuda()
 }
 #endif
 
+Tensor Tensor::clone()
+{
+    auto new_tensor = create_dirty(shape(), dtype(), get_align(), device().clone());
+    executor().copy(data(), new_tensor.data(), nbytes());
+
+    return new_tensor;
+}
+
 bool Tensor::is_view() const
 {
     return (bool)_base;
