@@ -96,24 +96,14 @@ void CUDAExecutor::dot(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 void CUDAExecutor::matmul(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 {
     // matrix mul
-    if (dst.shape().size() == 2) {
-        auto fn = [&](auto tag) {
-            using Type = decltype(tag);
-            auto p1 = reinterpret_cast<const Type*>(lhs.data());
-            auto p2 = reinterpret_cast<const Type*>(rhs.data());
+    auto fn = [&](auto tag) {
+        using Type = decltype(tag);
+        auto p1 = reinterpret_cast<const Type*>(lhs.data());
+        auto p2 = reinterpret_cast<const Type*>(rhs.data());
 
-            auto out = reinterpret_cast<Type*>(dst.data());
-        };
-        for_each_type(std::move(fn), dst.dtype());
-    } else if (dst.shape().size() == 1) { // dot product
-        auto fn = [&](auto tag) {
-            using Type = decltype(tag);
-            auto p1 = reinterpret_cast<const Type*>(lhs.data());
-            auto p2 = reinterpret_cast<const Type*>(rhs.data());
-
-            auto out = reinterpret_cast<Type*>(dst.data());
-        };
-    }
+        auto out = reinterpret_cast<Type*>(dst.data());
+    };
+    for_each_type(std::move(fn), dst.dtype());
 }
 
 void CUDAExecutor::relu(const Tensor& lhs, Tensor& dst)

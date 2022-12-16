@@ -4,7 +4,6 @@
 #include <cppgrad/exceptions/type_error.hpp>
 #include <gtest/gtest.h>
 
-
 using namespace cppgrad;
 
 TEST(TensorBasicTests, InitTensor)
