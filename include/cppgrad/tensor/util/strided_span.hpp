@@ -30,6 +30,11 @@ struct StridedSpan {
         return _size;
     }
 
+    bool is_contiguous() const
+    {
+        return _stride == 1;
+    }
+
 private:
     T* _data;
     size_t _stride;
@@ -50,14 +55,19 @@ struct StridedSpan2D {
 
     StridedSpan2D(BytePtr data, const std::vector<size_t>& strides, const std::vector<size_t>& sizes)
         : _data(reinterpret_cast<T*>(data))
-        , _strides{ strides[0] / sizeof (T), strides[1] / sizeof(T) }
-        , _sizes{ sizes[0], sizes[1] }
+        , _strides { strides[0] / sizeof(T), strides[1] / sizeof(T) }
+        , _sizes { sizes[0], sizes[1] }
     {
     }
 
     T& operator()(size_t row, size_t col)
     {
         return *(_data + row * _strides[0] + col * _strides[1]);
+    }
+
+    bool is_contiguous() const
+    {
+        return _strides[1] == 1;
     }
 
     size_t size(size_t dim)
