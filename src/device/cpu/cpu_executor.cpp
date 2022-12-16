@@ -1,5 +1,6 @@
 #include "cppgrad/device/cpu/cpu_executor.hpp"
 #include "cppgrad/exceptions/generic_error.hpp"
+#include "cppgrad/tensor/util/strided_span.hpp"
 #include "cppgrad/tensor/tensor.hpp"
 
 #include <algorithm>
@@ -136,12 +137,13 @@ void CPUExecutor::pow(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 {
     auto fn = [&](auto tag) {
         using Type = decltype(tag);
-        auto p1 = reinterpret_cast<const Type*>(lhs.data());
-        auto p2 = reinterpret_cast<const Type*>(rhs.data());
 
-        auto out = reinterpret_cast<Type*>(dst.data());
+        ConstStridedSpan<Type> p1 { lhs.data(), lhs.strides(), lhs.shape()};
+        ConstStridedSpan<Type> p2 { rhs.data(), rhs.strides(), rhs.shape()};
 
-        for (size_t k = 0; k < dst.numel(); k++) {
+        StridedSpan<Type> out { dst.data(), dst.strides(), dst.shape()};
+
+        for (size_t k = 0; k < out.size(); k++) {
             out[k] = std::pow(p1[k], p2[k]);
         }
     };
@@ -172,28 +174,19 @@ void CPUExecutor::matmul(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
     // matrix mul
     auto fn = [&](auto tag) {
         using Type = decltype(tag);
-        auto p1 = reinterpret_cast<const Type*>(lhs.data());
-        auto p2 = reinterpret_cast<const Type*>(rhs.data());
 
-        auto out = reinterpret_cast<Type*>(dst.data());
+        ConstStridedSpan2D<Type> p1 { lhs.data(), lhs.strides(), lhs.shape()};
+        ConstStridedSpan2D<Type> p2 { rhs.data(), rhs.strides(), rhs.shape() };
 
-        auto p1_stride_row = lhs.strides()[0] / sizeof(Type),
-             p1_stride_col = lhs.strides()[1] / sizeof(Type);
+        StridedSpan2D<Type> out { dst.data(), dst.strides(), dst.shape() };
 
-        auto p2_stride_row = rhs.strides()[0] / sizeof(Type),
-             p2_stride_col = rhs.strides()[1] / sizeof(Type);
-
-        auto dst_stride_row = dst.strides()[0] / sizeof(Type),
-             dst_stride_col = dst.strides()[1] / sizeof(Type);
-
-        for (size_t i = 0; i < lhs.shape()[0]; i++) { // row
-            for (size_t j = 0; j < rhs.shape()[1]; j++) { // col
+        for (size_t i = 0; i < p1.size(0); i++) { // row
+            for (size_t j = 0; j < p2.size(1); j++) { // col
                 // null elem
-                out[i * dst_stride_row + j * dst_stride_col] = Type(0);
+                out(i, j) = Type(0);
 
-                for (size_t k = 0; k < rhs.shape()[0]; k++) { // row-col advance
-                    out[i * dst_stride_row + j * dst_stride_col] += p1[i * p1_stride_row + k * p1_stride_col]
-                        * p2[k * p2_stride_row + j * p2_stride_col];
+                for (size_t k = 0; k < p2.size(0); k++) { // row-col advance
+                    out(i, j) += p1(i, k) * p2(k, j);
                 }
             }
         }

@@ -10,7 +10,7 @@
 #include "cppgrad/device/cpu/cpu.hpp"
 
 #include "cppgrad/tensor/impl.hpp"
-#include "cppgrad/tensor/impl_util.hpp"
+#include "cppgrad/tensor/util/impl_util.hpp"
 
 // exceptions
 #include "cppgrad/exceptions/index_error.hpp"

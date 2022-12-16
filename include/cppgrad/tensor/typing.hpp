@@ -99,6 +99,7 @@ constexpr void for_each_type(Fn&& fun, DType type)
 }
 
 // non-lambda macro, takes things by ref atm
+// should be ok on CUDA, as destructor/item() 'd synchronize
 #define FOREACH_TYPE(type, fn, ...) \
     for_each_type([&](auto tag) { fn<decltype(tag)>(__VA_ARGS__); }, type);
 

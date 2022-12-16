@@ -26,6 +26,7 @@ file (GLOB
 	include/cppgrad/autograd/*.hpp
 	include/cppgrad/device/*.hpp
 	include/cppgrad/tensor/*.hpp
+	include/cppgrad/tensor/util/*.hpp
 )
 
 set(CPPGRAD_DEVICE_INCLUDES 
