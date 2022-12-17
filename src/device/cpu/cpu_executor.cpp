@@ -1,5 +1,6 @@
 #include "cppgrad/device/cpu/cpu_executor.hpp"
 #include "cppgrad/exceptions/generic_error.hpp"
+#include "cppgrad/tensor/ops/op_wrapper.hpp"
 #include "cppgrad/tensor/tensor.hpp"
 #include "cppgrad/tensor/util/strided_span.hpp"
 
@@ -135,20 +136,13 @@ void CPUExecutor::mul(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 
 void CPUExecutor::pow(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 {
-    auto fn = [&](auto tag) {
-        using Type = decltype(tag);
-
-        ConstStridedSpan<Type> p1 { lhs };
-        ConstStridedSpan<Type> p2 { rhs };
-
-        StridedSpan<Type> out { dst };
-
+    auto fn = [](auto out, auto p1, auto p2) {
         for (size_t k = 0; k < out.size(); k++) {
             out[k] = std::pow(p1[k], p2[k]);
         }
     };
 
-    for_each_type(std::move(fn), dst.dtype());
+    for_each_type(OpWrapper1D { std::move(fn), dst, lhs, rhs }, dst.dtype());
 }
 
 void CPUExecutor::dot(const Tensor& lhs, const Tensor& rhs, Tensor& dst)

@@ -1,17 +1,38 @@
 #ifndef CPPGRAD_TENSOR_STRIDED_SPAN_HPP
 #define CPPGRAD_TENSOR_STRIDED_SPAN_HPP
 
-#include "cppgrad/tensor/tensor_fwd.hpp"
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <type_traits>
 
 namespace cppgrad {
+
+namespace impl {
+
+    template <typename Type, typename = void>
+    struct IsTensor : std::false_type {
+    };
+
+    template <typename Type>
+    struct IsTensor<Type,
+        typename std::enable_if_t<std::is_member_function_pointer_v<decltype(&Type::numel)>>>
+        : std::true_type {
+    };
+
+    template <typename T>
+    inline constexpr bool is_tensor_v = IsTensor<T>::value;
+
+}
 
 template <typename T>
 struct StridedSpan {
 
-    template <typename Tensor>
+    StridedSpan(const StridedSpan<T>&) = default;
+    StridedSpan(StridedSpan<T>&&) = default;
+
+    template <typename Tensor,
+        std::enable_if_t<impl::is_tensor_v<Tensor>>* = 0>
     StridedSpan(Tensor& t)
         : _data(reinterpret_cast<T*>(t.data()))
         , _size(t.numel())
@@ -56,7 +77,8 @@ struct ConstStridedSpan : StridedSpan<const T> {
 template <typename T>
 struct StridedSpan2D {
 
-    template <typename Tensor>
+    template <typename Tensor,
+        std::enable_if_t<impl::is_tensor_v<Tensor>>* = 0>
     StridedSpan2D(Tensor& t)
         : _data(reinterpret_cast<T*>(t.data()))
         , _strides { t.strides()[0] / sizeof(T), t.strides()[1] / sizeof(T) }
