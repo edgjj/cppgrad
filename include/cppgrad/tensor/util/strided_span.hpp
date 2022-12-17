@@ -32,7 +32,7 @@ struct StridedSpan {
     StridedSpan(StridedSpan<T>&&) = default;
 
     template <typename Tensor,
-        std::enable_if_t<impl::is_tensor_v<Tensor>>* = 0>
+        std::enable_if_t<impl::is_tensor_v<Tensor>>* = nullptr>
     StridedSpan(Tensor& t)
         : _data(reinterpret_cast<T*>(t.data()))
         , _size(t.numel())
@@ -71,14 +71,14 @@ private:
 
 template <typename T>
 struct ConstStridedSpan : StridedSpan<const T> {
-    using StridedSpan::StridedSpan;
+    using StridedSpan<const T>::StridedSpan;
 };
 
 template <typename T>
 struct StridedSpan2D {
 
     template <typename Tensor,
-        std::enable_if_t<impl::is_tensor_v<Tensor>>* = 0>
+        std::enable_if_t<impl::is_tensor_v<Tensor>>* = nullptr>
     StridedSpan2D(Tensor& t)
         : _data(reinterpret_cast<T*>(t.data()))
         , _strides { t.strides()[0] / sizeof(T), t.strides()[1] / sizeof(T) }
@@ -111,7 +111,7 @@ private:
 
 template <typename T>
 struct ConstStridedSpan2D : StridedSpan2D<const T> {
-    using StridedSpan2D::StridedSpan2D;
+    using StridedSpan2D<const T>::StridedSpan2D;
 };
 
 }

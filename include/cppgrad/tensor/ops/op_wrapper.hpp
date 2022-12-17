@@ -41,35 +41,41 @@ protected:
 
 template <typename Fn, typename Tensor>
 struct OpWrapper1D : OpWrapperBase<Fn, Tensor> {
-    using OpWrapperBase::OpWrapperBase;
+    using OpWrapperBase<Fn, Tensor>::OpWrapperBase;
 
     template <typename T>
     void operator()(T tag)
     {
-        ConstStridedSpan<T> op1 { _lhs };
-        ConstStridedSpan<T> op2 { _rhs };
+        ConstStridedSpan<T> op1 { this->_lhs };
+        ConstStridedSpan<T> op2 { this->_rhs };
 
-        StridedSpan<T> out { _out };
+        StridedSpan<T> out { this->_out };
 
-        _fun(out, op1, op2);
+        this->_fun(out, op1, op2);
     }
 };
 
 template <typename Fn, typename Tensor>
+OpWrapper1D(Fn&&, Tensor&, const Tensor&, const Tensor&) -> OpWrapper1D<Fn, Tensor>;
+
+template <typename Fn, typename Tensor>
 struct OpWrapper2D : OpWrapperBase<Fn, Tensor> {
-    using OpWrapperBase::OpWrapperBase;
+    using OpWrapperBase<Fn, Tensor>::OpWrapperBase;
 
     template <typename T>
     void operator()(T tag)
     {
-        ConstStridedSpan2D<T> op1 { _lhs };
-        ConstStridedSpan2D<T> op2 { _rhs };
+        ConstStridedSpan2D<T> op1 { this->_lhs };
+        ConstStridedSpan2D<T> op2 { this->_rhs };
 
-        StridedSpan2D<T> out { _out };
+        StridedSpan2D<T> out { this->_out };
 
-        _fun(out, op1, op2);
+        this->_fun(out, op1, op2);
     }
 };
+
+template <typename Fn, typename Tensor>
+OpWrapper2D(Fn&&, Tensor&, const Tensor&, const Tensor&) -> OpWrapper2D<Fn, Tensor>;
 
 }
 
