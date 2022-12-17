@@ -1,7 +1,7 @@
 #include "cppgrad/device/cpu/cpu_executor.hpp"
 #include "cppgrad/exceptions/generic_error.hpp"
-#include "cppgrad/tensor/util/strided_span.hpp"
 #include "cppgrad/tensor/tensor.hpp"
+#include "cppgrad/tensor/util/strided_span.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -138,10 +138,10 @@ void CPUExecutor::pow(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
     auto fn = [&](auto tag) {
         using Type = decltype(tag);
 
-        ConstStridedSpan<Type> p1 { lhs.data(), lhs.strides(), lhs.shape()};
-        ConstStridedSpan<Type> p2 { rhs.data(), rhs.strides(), rhs.shape()};
-
-        StridedSpan<Type> out { dst.data(), dst.strides(), dst.shape()};
+        ConstStridedSpan<Type> p1 { lhs.data(), lhs.strides(), lhs.numel() };
+        ConstStridedSpan<Type> p2 { rhs.data(), rhs.strides(), rhs.numel() };
+        p1.data();
+        StridedSpan<Type> out { dst.data(), dst.strides(), dst.numel() };
 
         for (size_t k = 0; k < out.size(); k++) {
             out[k] = std::pow(p1[k], p2[k]);
@@ -175,7 +175,7 @@ void CPUExecutor::matmul(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
     auto fn = [&](auto tag) {
         using Type = decltype(tag);
 
-        ConstStridedSpan2D<Type> p1 { lhs.data(), lhs.strides(), lhs.shape()};
+        ConstStridedSpan2D<Type> p1 { lhs.data(), lhs.strides(), lhs.shape() };
         ConstStridedSpan2D<Type> p2 { rhs.data(), rhs.strides(), rhs.shape() };
 
         StridedSpan2D<Type> out { dst.data(), dst.strides(), dst.shape() };

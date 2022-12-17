@@ -3,8 +3,8 @@
 
 #include "cppgrad/tensor/tensor_fwd.hpp"
 #include <cstddef>
+#include <numeric>
 #include <type_traits>
-#include <vector>
 
 namespace cppgrad {
 
@@ -13,11 +13,23 @@ struct StridedSpan {
 
     using BytePtr = std::conditional_t<std::is_const_v<T>, const std::byte*, std::byte*>;
 
-    StridedSpan(BytePtr data, const std::vector<size_t>& strides, const std::vector<size_t>& sizes)
+    /**
+     * There we can check if strides are contiguous.
+     *
+     * If they are - just take last stride value as main stride.
+     * If they not - take first stride value.
+     *
+     * For both cases - reduce sizes to single value.
+     *
+     */
+
+    template <typename Vec>
+    StridedSpan(BytePtr data, const Vec& strides, size_t numel)
         : _data(reinterpret_cast<T*>(data))
-        , _stride(strides[0] / sizeof(T))
-        , _size(sizes[0])
+        , _size(numel)
     {
+        _stride = std::is_sorted(strides.begin(), strides.end()) ? *strides.rbegin() : *strides.begin();
+        _stride /= sizeof(T);
     }
 
     T& operator[](size_t index)
@@ -33,6 +45,11 @@ struct StridedSpan {
     bool is_contiguous() const
     {
         return _stride == 1;
+    }
+
+    T* data()
+    {
+        return _data;
     }
 
 private:
@@ -53,7 +70,8 @@ struct StridedSpan2D {
 
     using BytePtr = std::conditional_t<std::is_const_v<T>, const std::byte*, std::byte*>;
 
-    StridedSpan2D(BytePtr data, const std::vector<size_t>& strides, const std::vector<size_t>& sizes)
+    template <typename Vec>
+    StridedSpan2D(BytePtr data, const Vec& strides, const Vec& sizes)
         : _data(reinterpret_cast<T*>(data))
         , _strides { strides[0] / sizeof(T), strides[1] / sizeof(T) }
         , _sizes { sizes[0], sizes[1] }
