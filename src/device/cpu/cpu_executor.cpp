@@ -138,10 +138,10 @@ void CPUExecutor::pow(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
     auto fn = [&](auto tag) {
         using Type = decltype(tag);
 
-        ConstStridedSpan<Type> p1 { lhs.data(), lhs.strides(), lhs.numel() };
-        ConstStridedSpan<Type> p2 { rhs.data(), rhs.strides(), rhs.numel() };
-        p1.data();
-        StridedSpan<Type> out { dst.data(), dst.strides(), dst.numel() };
+        ConstStridedSpan<Type> p1 { lhs };
+        ConstStridedSpan<Type> p2 { rhs };
+
+        StridedSpan<Type> out { dst };
 
         for (size_t k = 0; k < out.size(); k++) {
             out[k] = std::pow(p1[k], p2[k]);
@@ -175,10 +175,10 @@ void CPUExecutor::matmul(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
     auto fn = [&](auto tag) {
         using Type = decltype(tag);
 
-        ConstStridedSpan2D<Type> p1 { lhs.data(), lhs.strides(), lhs.shape() };
-        ConstStridedSpan2D<Type> p2 { rhs.data(), rhs.strides(), rhs.shape() };
+        ConstStridedSpan2D<Type> p1 { lhs };
+        ConstStridedSpan2D<Type> p2 { rhs };
 
-        StridedSpan2D<Type> out { dst.data(), dst.strides(), dst.shape() };
+        StridedSpan2D<Type> out { dst };
 
         for (size_t i = 0; i < p1.size(0); i++) { // row
             for (size_t j = 0; j < p2.size(1); j++) { // col

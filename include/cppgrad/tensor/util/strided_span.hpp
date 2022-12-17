@@ -2,33 +2,21 @@
 #define CPPGRAD_TENSOR_STRIDED_SPAN_HPP
 
 #include "cppgrad/tensor/tensor_fwd.hpp"
+#include <algorithm>
+#include <cassert>
 #include <cstddef>
-#include <numeric>
-#include <type_traits>
 
 namespace cppgrad {
 
 template <typename T>
 struct StridedSpan {
 
-    using BytePtr = std::conditional_t<std::is_const_v<T>, const std::byte*, std::byte*>;
-
-    /**
-     * There we can check if strides are contiguous.
-     *
-     * If they are - just take last stride value as main stride.
-     * If they not - take first stride value.
-     *
-     * For both cases - reduce sizes to single value.
-     *
-     */
-
-    template <typename Vec>
-    StridedSpan(BytePtr data, const Vec& strides, size_t numel)
-        : _data(reinterpret_cast<T*>(data))
-        , _size(numel)
+    template <typename Tensor>
+    StridedSpan(Tensor& t)
+        : _data(reinterpret_cast<T*>(t.data()))
+        , _size(t.numel())
     {
-        _stride = std::is_sorted(strides.begin(), strides.end()) ? *strides.rbegin() : *strides.begin();
+        _stride = std::is_sorted(t.strides().begin(), t.strides().end()) ? *t.strides().rbegin() : *t.strides().begin();
         _stride /= sizeof(T);
     }
 
@@ -68,14 +56,14 @@ struct ConstStridedSpan : StridedSpan<const T> {
 template <typename T>
 struct StridedSpan2D {
 
-    using BytePtr = std::conditional_t<std::is_const_v<T>, const std::byte*, std::byte*>;
-
-    template <typename Vec>
-    StridedSpan2D(BytePtr data, const Vec& strides, const Vec& sizes)
-        : _data(reinterpret_cast<T*>(data))
-        , _strides { strides[0] / sizeof(T), strides[1] / sizeof(T) }
-        , _sizes { sizes[0], sizes[1] }
+    template <typename Tensor>
+    StridedSpan2D(Tensor& t)
+        : _data(reinterpret_cast<T*>(t.data()))
+        , _strides { t.strides()[0] / sizeof(T), t.strides()[1] / sizeof(T) }
+        , _sizes { t.shape()[0], t.shape()[1] }
     {
+        // check if tensor is 2-dim; no exception due to possible poor perf
+        assert(t.strides().size() == 2);
     }
 
     T& operator()(size_t row, size_t col)
