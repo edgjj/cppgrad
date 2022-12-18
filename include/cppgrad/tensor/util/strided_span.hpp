@@ -6,6 +6,8 @@
 #include <cstddef>
 #include <type_traits>
 
+#include "cppgrad/device/cuda/cuda_defs.hpp"
+
 namespace cppgrad {
 
 namespace impl {
@@ -43,22 +45,22 @@ struct StridedSpan {
         _stride /= sizeof(T);
     }
 
-    T& operator[](size_t index)
+    CPPGRAD_CUDA_FN T& operator[](size_t index)
     {
         return *(_data + index * _stride);
     }
 
-    size_t size() const
+    CPPGRAD_CUDA_FN size_t size() const
     {
         return _size;
     }
 
-    bool is_contiguous() const
+    CPPGRAD_CUDA_FN bool is_contiguous() const
     {
         return _stride == 1;
     }
 
-    T* data()
+    CPPGRAD_CUDA_FN T* data()
     {
         return _data;
     }
@@ -92,17 +94,17 @@ struct StridedSpan2D {
         assert(t.strides().size() == 2);
     }
 
-    T& operator()(size_t row, size_t col)
+    CPPGRAD_CUDA_FN T& operator()(size_t row, size_t col)
     {
         return *(_data + row * _strides[0] + col * _strides[1]);
     }
 
-    bool is_contiguous() const
+    CPPGRAD_CUDA_FN bool is_contiguous() const
     {
         return _strides[1] == 1;
     }
 
-    size_t size(size_t dim)
+    CPPGRAD_CUDA_FN size_t size(size_t dim)
     {
         return _sizes[dim];
     }

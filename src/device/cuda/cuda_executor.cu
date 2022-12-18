@@ -1,8 +1,7 @@
 #include "cppgrad/device/cuda/cuda.hpp"
 #include "cppgrad/device/cuda/cuda_executor.hpp"
-
 #include "cppgrad/device/cuda/kernels/ops_kernels.cuh"
-#include "cppgrad/device/cuda/kernels/strided_copy_kernel.cuh"
+#include "cppgrad/tensor/ops/op_wrapper.hpp"
 
 #include "cppgrad/tensor/tensor.hpp"
 
@@ -29,14 +28,12 @@ void CUDAExecutor::copy(const std::byte* from, std::byte* to, std::size_t count,
 
 void CUDAExecutor::strided_copy(const Tensor& from, Tensor& to)
 {
-    FOREACH_TYPE(from.dtype(),
-        impl::strided_copy_impl,
-        from.data(),
-        to.data(),
-        from.shape().data(),
-        from.strides().data(),
-        to.strides().data(),
-        from.shape().size());
+    auto fn = [](auto out, auto p1, auto p2) {
+        CPPGRAD_CUDA_LAUNCH(strided_copy_kernel, out.size())
+        (p1, out);
+    };
+
+    for_each_type(OpWrapper1D { std::move(fn), to, from, from }, to.dtype());
 }
 
 void CUDAExecutor::fill(Tensor& tensor, std::byte* value)
@@ -56,100 +53,76 @@ void CUDAExecutor::fill(Tensor& tensor, std::byte* value)
 
 void CUDAExecutor::sum(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 {
-    auto fn = [&](auto tag) {
-        using Type = decltype(tag);
-        auto p1 = reinterpret_cast<const Type*>(lhs.data());
-        auto p2 = reinterpret_cast<const Type*>(rhs.data());
-
-        auto out = reinterpret_cast<Type*>(dst.data());
-
-        CPPGRAD_CUDA_LAUNCH(sum_kernel, dst.numel())
-        (p1, p2, out, dst.numel());
+    auto fn = [](auto out, auto p1, auto p2) {
+        CPPGRAD_CUDA_LAUNCH(sum_kernel, out.size())
+        (p1, p2, out);
     };
 
-    for_each_type(std::move(fn), dst.dtype());
+    for_each_type(OpWrapper1D { std::move(fn), dst, lhs, rhs }, dst.dtype());
 }
 
 void CUDAExecutor::sub(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 {
-    auto fn = [&](auto tag) {
-        using Type = decltype(tag);
-        auto p1 = reinterpret_cast<const Type*>(lhs.data());
-        auto p2 = reinterpret_cast<const Type*>(rhs.data());
-
-        auto out = reinterpret_cast<Type*>(dst.data());
-
-        CPPGRAD_CUDA_LAUNCH(sub_kernel, dst.numel())
-        (p1, p2, out, dst.numel());
+    auto fn = [](auto out, auto p1, auto p2) {
+        CPPGRAD_CUDA_LAUNCH(sub_kernel, out.size())
+        (p1, p2, out);
     };
 
-    for_each_type(std::move(fn), dst.dtype());
+    for_each_type(OpWrapper1D { std::move(fn), dst, lhs, rhs }, dst.dtype());
 }
 
 void CUDAExecutor::mul(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 {
-    auto fn = [&](auto tag) {
-        using Type = decltype(tag);
-        auto p1 = reinterpret_cast<const Type*>(lhs.data());
-        auto p2 = reinterpret_cast<const Type*>(rhs.data());
-
-        auto out = reinterpret_cast<Type*>(dst.data());
-
-        CPPGRAD_CUDA_LAUNCH(mul_kernel, dst.numel())
-        (p1, p2, out, dst.numel());
+    auto fn = [](auto out, auto p1, auto p2) {
+        CPPGRAD_CUDA_LAUNCH(mul_kernel, out.size())
+        (p1, p2, out);
     };
 
-    for_each_type(std::move(fn), dst.dtype());
+    for_each_type(OpWrapper1D { std::move(fn), dst, lhs, rhs }, dst.dtype());
 }
 
 void CUDAExecutor::pow(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 {
-    // matrix mul
-    auto fn = [&](auto tag) {
-        using Type = decltype(tag);
-        auto p1 = reinterpret_cast<const Type*>(lhs.data());
-        auto p2 = reinterpret_cast<const Type*>(rhs.data());
-
-        auto out = reinterpret_cast<Type*>(dst.data());
-
-        CPPGRAD_CUDA_LAUNCH(pow_kernel, dst.numel())
-        (p1, p2, out, dst.numel());
+    auto fn = [](auto out, auto p1, auto p2) {
+        CPPGRAD_CUDA_LAUNCH(pow_kernel, out.size())
+        (p1, p2, out);
     };
 
-    for_each_type(std::move(fn), dst.dtype());
+    for_each_type(OpWrapper1D { std::move(fn), dst, lhs, rhs }, dst.dtype());
 }
 
 void CUDAExecutor::dot(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 {
     // matrix mul
-    auto fn = [&](auto tag) {
-        using Type = decltype(tag);
-        auto p1 = reinterpret_cast<const Type*>(lhs.data());
-        auto p2 = reinterpret_cast<const Type*>(rhs.data());
-
-        auto out = reinterpret_cast<Type*>(dst.data());
-
-        CPPGRAD_CUDA_LAUNCH(dot_kernel, dst.numel())
-        (p1, p2, out, dst.numel());
+    auto fn = [](auto out, auto p1, auto p2) {
+        CPPGRAD_CUDA_LAUNCH(dot_kernel, p1.size())
+        (p1, p2, out);
     };
 
-    for_each_type(std::move(fn), dst.dtype());
+    for_each_type(OpWrapper1D { std::move(fn), dst, lhs, rhs }, dst.dtype());
 }
 
 void CUDAExecutor::matmul(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 {
-    auto fn = [&](auto tag) {
-        using Type = decltype(tag);
-        auto p1 = reinterpret_cast<const Type*>(lhs.data());
-        auto p2 = reinterpret_cast<const Type*>(rhs.data());
+    // auto fn = [&](auto tag) {
+    //     using Type = decltype(tag);
+    //     auto p1 = reinterpret_cast<const Type*>(lhs.data());
+    //     auto p2 = reinterpret_cast<const Type*>(rhs.data());
 
-        auto out = reinterpret_cast<Type*>(dst.data());
+    //     auto out = reinterpret_cast<Type*>(dst.data());
 
-        CPPGRAD_CUDA_LAUNCH(matmul_kernel, dst.numel())
-        (p1, p2, out, dst.numel());
+    //     CPPGRAD_CUDA_LAUNCH(matmul_kernel, dst.numel())
+    //     (p1, p2, out, dst.numel());
+    // };
+
+    // for_each_type(std::move(fn), dst.dtype());
+
+    auto fn = [&](auto out, auto p1, auto p2) {
+        // CPPGRAD_CUDA_LAUNCH(matmul_kernel, dst.numel())
+        // (p1, p2, out);
     };
 
-    for_each_type(std::move(fn), dst.dtype());
+    for_each_type(OpWrapper2D { std::move(fn), dst, lhs, rhs }, dst.dtype());
 }
 
 void CUDAExecutor::relu(const Tensor& lhs, Tensor& dst)

@@ -11,45 +11,6 @@
 
 namespace cppgrad::impl {
 
-template <typename T>
-static void strided_copy_copier(const T* from,
-    T* to,
-    size_t count,
-    size_t from_stride,
-    size_t to_stride)
-{
-    for (size_t i = 0; i < count; i++) {
-        to[i * to_stride] = from[i * from_stride];
-    }
-}
-
-template <typename T>
-static void strided_copy_impl(const std::byte* from,
-    std::byte* to,
-    const size_t* shape,
-    const size_t* from_strides,
-    const size_t* to_strides,
-    size_t shape_size)
-{
-    if (shape_size == 1) {
-        strided_copy_copier<T>(reinterpret_cast<const T*>(from),
-            reinterpret_cast<T*>(to),
-            *shape,
-            *from_strides / sizeof(T),
-            *to_strides / sizeof(T));
-
-        return;
-    }
-
-    while (shape_size != 1) {
-        strided_copy_impl<T>(from + *from_strides, to + *to_strides,
-            ++shape,
-            ++from_strides,
-            ++to_strides,
-            --shape_size);
-    }
-}
-
 void CPUExecutor::copy(const std::byte* from, std::byte* to, std::size_t count, CopyType copy_type)
 {
     // ignore copy_type as it's CPU
@@ -58,18 +19,18 @@ void CPUExecutor::copy(const std::byte* from, std::byte* to, std::size_t count, 
 
 void CPUExecutor::strided_copy(const Tensor& from, Tensor& to)
 {
-    FOREACH_TYPE(from.dtype(),
-        impl::strided_copy_impl,
-        from.data(),
-        to.data(),
-        from.shape().data(),
-        from.strides().data(),
-        to.strides().data(),
-        from.shape().size());
+    auto fn = [](auto out, auto p1, auto p2) {
+        for (size_t k = 0; k < out.size(); k++) {
+            out[k] = p1[k];
+        }
+    };
+
+    for_each_type(OpWrapper1D { std::move(fn), to, from, from }, from.dtype());
 }
 
 void CPUExecutor::fill(Tensor& tensor, std::byte* value)
 {
+    // we avoid OpWrapper there since we need to lift fill_value
     auto fn = [&](auto tag) {
         using Type = decltype(tag);
 

@@ -36,6 +36,17 @@ namespace impl {
 #define CPPGRAD_CUDA_LAUNCH(kernel, count) \
     kernel<<<impl::grid_size_for_N(count), CPPGRAD_CUDA_NUM_THREADS>>>
 
+/**
+ * @brief This macro could be used to allow heterogeneous structs.
+ * ATM used in StridedSpan.
+ *
+ */
+#ifdef __CUDACC__
+#define CPPGRAD_CUDA_FN __host__ __device__
+#else
+#define CPPGRAD_CUDA_FN
+#endif
+
 }
 
 #endif
