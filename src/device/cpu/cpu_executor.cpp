@@ -130,7 +130,7 @@ void CPUExecutor::pow(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 void CPUExecutor::dot(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 {
     auto fn = [](auto out, auto p1, auto p2) {
-        using Type = decltype(out)::Type;
+        using Type = typename decltype(out)::Type;
 
         out[0] = Type(0);
         for (size_t k = 0; k < p1.size(); k++) {
@@ -144,7 +144,7 @@ void CPUExecutor::dot(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 void CPUExecutor::matmul(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 {
     auto fn = [&](auto out, auto p1, auto p2) {
-        using Type = decltype(out)::Type;
+        using Type = typename decltype(out)::Type;
 
         for (size_t i = 0; i < p1.size(0); i++) { // row
             for (size_t j = 0; j < p2.size(1); j++) { // col
@@ -164,7 +164,7 @@ void CPUExecutor::matmul(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 void CPUExecutor::relu(const Tensor& lhs, Tensor& dst)
 {
     auto fn = [](auto out, auto p1, auto p2) {
-        using Type = decltype(out)::Type;
+        using Type = typename decltype(out)::Type;
 
         for (size_t k = 0; k < out.size(); k++) {
             out[k] = std::max(Type(0), p1[k]);
