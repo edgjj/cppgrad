@@ -85,53 +85,35 @@ void CPUExecutor::fill(Tensor& tensor, std::byte* value)
 
 void CPUExecutor::sum(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 {
-    auto fn = [&](auto tag) {
-        using Type = decltype(tag);
-        auto p1 = reinterpret_cast<const Type*>(lhs.data());
-        auto p2 = reinterpret_cast<const Type*>(rhs.data());
-
-        auto out = reinterpret_cast<Type*>(dst.data());
-
-        for (size_t k = 0; k < dst.numel(); k++) {
+    auto fn = [](auto out, auto p1, auto p2) {
+        for (size_t k = 0; k < out.size(); k++) {
             out[k] = p1[k] + p2[k];
         }
     };
 
-    for_each_type(std::move(fn), dst.dtype());
+    for_each_type(OpWrapper1D { std::move(fn), dst, lhs, rhs }, dst.dtype());
 }
 
 void CPUExecutor::sub(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 {
-    auto fn = [&](auto tag) {
-        using Type = decltype(tag);
-        auto p1 = reinterpret_cast<const Type*>(lhs.data());
-        auto p2 = reinterpret_cast<const Type*>(rhs.data());
-
-        auto out = reinterpret_cast<Type*>(dst.data());
-
-        for (size_t k = 0; k < dst.numel(); k++) {
+    auto fn = [](auto out, auto p1, auto p2) {
+        for (size_t k = 0; k < out.size(); k++) {
             out[k] = p1[k] - p2[k];
         }
     };
 
-    for_each_type(std::move(fn), dst.dtype());
+    for_each_type(OpWrapper1D { std::move(fn), dst, lhs, rhs }, dst.dtype());
 }
 
 void CPUExecutor::mul(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 {
-    auto fn = [&](auto tag) {
-        using Type = decltype(tag);
-        auto p1 = reinterpret_cast<const Type*>(lhs.data());
-        auto p2 = reinterpret_cast<const Type*>(rhs.data());
-
-        auto out = reinterpret_cast<Type*>(dst.data());
-
-        for (size_t k = 0; k < dst.numel(); k++) {
+    auto fn = [](auto out, auto p1, auto p2) {
+        for (size_t k = 0; k < out.size(); k++) {
             out[k] = p1[k] * p2[k];
         }
     };
 
-    for_each_type(std::move(fn), dst.dtype());
+    for_each_type(OpWrapper1D { std::move(fn), dst, lhs, rhs }, dst.dtype());
 }
 
 void CPUExecutor::pow(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
@@ -147,32 +129,22 @@ void CPUExecutor::pow(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 
 void CPUExecutor::dot(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 {
-    auto fn = [&](auto tag) {
-        using Type = decltype(tag);
-        auto p1 = reinterpret_cast<const Type*>(lhs.data());
-        auto p2 = reinterpret_cast<const Type*>(rhs.data());
+    auto fn = [](auto out, auto p1, auto p2) {
+        using Type = decltype(out)::Type;
 
-        auto out = reinterpret_cast<Type*>(dst.data());
-        *out = Type(0);
-
-        for (size_t k = 0; k < lhs.numel(); k++) {
-            *out += p1[k] * p2[k];
+        out[0] = Type(0);
+        for (size_t k = 0; k < p1.size(); k++) {
+            out[0] += p1[k] * p2[k];
         }
     };
 
-    for_each_type(std::move(fn), dst.dtype());
+    for_each_type(OpWrapper1D { std::move(fn), dst, lhs, rhs }, dst.dtype());
 }
 
 void CPUExecutor::matmul(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 {
-    // matrix mul
-    auto fn = [&](auto tag) {
-        using Type = decltype(tag);
-
-        ConstStridedSpan2D<Type> p1 { lhs };
-        ConstStridedSpan2D<Type> p2 { rhs };
-
-        StridedSpan2D<Type> out { dst };
+    auto fn = [&](auto out, auto p1, auto p2) {
+        using Type = decltype(out)::Type;
 
         for (size_t i = 0; i < p1.size(0); i++) { // row
             for (size_t j = 0; j < p2.size(1); j++) { // col
@@ -186,15 +158,31 @@ void CPUExecutor::matmul(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
         }
     };
 
-    for_each_type(std::move(fn), dst.dtype());
+    for_each_type(OpWrapper2D { std::move(fn), dst, lhs, rhs }, dst.dtype());
 }
 
 void CPUExecutor::relu(const Tensor& lhs, Tensor& dst)
 {
+    auto fn = [](auto out, auto p1, auto p2) {
+        using Type = decltype(out)::Type;
+
+        for (size_t k = 0; k < out.size(); k++) {
+            out[k] = std::max(Type(0), p1[k]);
+        }
+    };
+
+    for_each_type(OpWrapper1D { std::move(fn), dst, lhs, lhs }, dst.dtype());
 }
 
 void CPUExecutor::tanh(const Tensor& lhs, Tensor& dst)
 {
+    auto fn = [](auto out, auto p1, auto p2) {
+        for (size_t k = 0; k < out.size(); k++) {
+            out[k] = std::tanh(p1[k]);
+        }
+    };
+
+    for_each_type(OpWrapper1D { std::move(fn), dst, lhs, lhs }, dst.dtype());
 }
 
 void CPUExecutor::cmp(const Tensor& lhs, const Tensor& rhs, Tensor& dst, CompareType cmp_type)

@@ -28,6 +28,8 @@ namespace impl {
 template <typename T>
 struct StridedSpan {
 
+    using Type = T;
+
     StridedSpan(const StridedSpan<T>&) = default;
     StridedSpan(StridedSpan<T>&&) = default;
 
@@ -76,6 +78,8 @@ struct ConstStridedSpan : StridedSpan<const T> {
 
 template <typename T>
 struct StridedSpan2D {
+
+    using Type = T;
 
     template <typename Tensor,
         std::enable_if_t<impl::is_tensor_v<Tensor>>* = nullptr>
