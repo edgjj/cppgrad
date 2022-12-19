@@ -8,6 +8,8 @@
 
 using namespace cppgrad;
 
+#ifdef CPPGRAD_HAS_CUDA
+
 TEST(TensorCUDAOpsTests, SumTest)
 {
     Tensor t1 = Tensor { 2, 3, 4, 5, 6, 7 }.cuda();
@@ -155,3 +157,5 @@ TEST(TensorCUDAOpsTests, MatmulTestNonEqShape)
     ASSERT_EQ(t3(1, 0).item<i32>(), 85);
     ASSERT_EQ(t3(1, 1).item<i32>(), 42);
 }
+
+#endif
