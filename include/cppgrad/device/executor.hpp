@@ -64,6 +64,8 @@ struct Executor {
     virtual void relu(const Tensor& lhs, Tensor& dst) = 0;
     virtual void tanh(const Tensor& lhs, Tensor& dst) = 0;
     virtual void cmp(const Tensor& lhs, const Tensor& rhs, Tensor& dst, CompareType cmp_type) = 0;
+
+    virtual ~Executor() = default;
 };
 
 }

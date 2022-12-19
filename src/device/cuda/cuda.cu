@@ -29,7 +29,7 @@ void CUDA::deallocate(std::byte* ptr, std::align_val_t alignment)
 impl::Executor& CUDA::get_executor()
 {
     // dispatch between AVX/SSE/etc executors there?
-    static impl::CUDAExecutor executor;
+    static impl::CUDAExecutor executor(*this);
 
     return executor;
 }

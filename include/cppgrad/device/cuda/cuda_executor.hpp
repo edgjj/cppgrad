@@ -3,9 +3,15 @@
 
 #include "cppgrad/device/executor.hpp"
 
+namespace cppgrad {
+struct CUDA;
+}
+
 namespace cppgrad::impl {
 
 struct CUDAExecutor : Executor {
+
+    CUDAExecutor(CUDA& parent_device);
 
     void copy(const std::byte* from, std::byte* to, std::size_t count, CopyType copy_type) override;
     void strided_copy(const Tensor& from, Tensor& to) override;
@@ -21,6 +27,9 @@ struct CUDAExecutor : Executor {
     void relu(const Tensor& lhs, Tensor& dst) override;
     void tanh(const Tensor& lhs, Tensor& dst) override;
     void cmp(const Tensor& lhs, const Tensor& rhs, Tensor& dst, CompareType cmp_type) override;
+
+private:
+    std::byte* _reduce_mem;
 };
 
 }

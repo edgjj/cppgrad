@@ -12,21 +12,21 @@ namespace impl {
      *
      */
 
-    constexpr int CPPGRAD_CUDA_NUM_THREADS = 128;
-    constexpr int CPPGRAD_CUDA_MAX_GRID_SIZE = 4096;
+    constexpr unsigned int CPPGRAD_CUDA_NUM_THREADS = 128;
+    constexpr unsigned int CPPGRAD_CUDA_MAX_GRID_SIZE = 4096;
 
-    inline constexpr int grid_size_for_N(const int N)
+    inline constexpr unsigned int grid_size_for_N(const unsigned int N)
     {
         return std::max(
-            std::min((N + CPPGRAD_CUDA_NUM_THREADS - 1) / CPPGRAD_CUDA_NUM_THREADS,
+            std::min((N + CPPGRAD_CUDA_NUM_THREADS - 1u) / CPPGRAD_CUDA_NUM_THREADS,
                 CPPGRAD_CUDA_MAX_GRID_SIZE),
-            1);
+            1u);
     }
 
 }
 
-#define CPPGRAD_CUDA_1D_LOOP(idx, n)                                    \
-    for (size_t idx = blockIdx.x * blockDim.x + threadIdx.x; idx < (n); \
+#define CPPGRAD_CUDA_1D_LOOP(idx, n)                                          \
+    for (unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x; idx < (n); \
          idx += blockDim.x * gridDim.x)
 
 /**

@@ -62,13 +62,54 @@ __global__ void pow_kernel(ConstStridedSpan<T> p1, ConstStridedSpan<T> p2, Strid
 }
 
 template <typename T>
-__global__ void dot_kernel(ConstStridedSpan<T> p1, ConstStridedSpan<T> p2, StridedSpan<T> out)
+__global__ void dot_kernel(ConstStridedSpan<T> p1, ConstStridedSpan<T> p2, StridedSpan<T> out, T* block_results)
 {
-    out[0] = T(0);
-    // incorrect due to reduction
+    // we assume this kernel is always launched with CPPGRAD_CUDA_NUM_THREADS on block sz
+    __shared__ T block_dot[impl::CPPGRAD_CUDA_NUM_THREADS];
+
+    unsigned int local_idx = threadIdx.x;
+
+    // zero-init; sdata
+    block_dot[local_idx] = T(0);
+
     CPPGRAD_CUDA_1D_LOOP(i, p1.size())
     {
-        out[0] += p1[i] * p2[i];
+        block_dot[local_idx] += p1[i] * p2[i];
+    }
+
+    __syncthreads();
+
+    // reduction 1/2
+    for (unsigned int i = blockDim.x / 2; i != 0; i >>= 1) { // kernel 3
+        if (local_idx < i) {
+            block_dot[local_idx] += block_dot[local_idx + i];
+        }
+
+        __syncthreads();
+    }
+
+    if (local_idx == 0) {
+        block_results[blockIdx.x] = block_dot[0];
+    }
+
+    if (gridDim.x > 1) {
+        __threadfence();
+
+        if (local_idx == 0) {
+            unsigned int& retirementCount = *reinterpret_cast<unsigned int*>(out.data());
+            auto ticket = atomicInc(&retirementCount, 1);
+
+            // check if block is actually last; reduce by last thread available
+            if (ticket == gridDim.x - 1) {
+                out[0] = 0;
+                for (unsigned int i = 0; i < gridDim.x; i++) {
+                    out[0] += block_results[i];
+                }
+            }
+        }
+    } else {
+        // just copy value to global mem
+        out[0] = block_dot[0];
     }
 }
 
