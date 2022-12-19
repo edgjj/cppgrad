@@ -16,11 +16,11 @@ __global__ void strided_copy_kernel(ConstStridedSpan<T> p1, StridedSpan<T> out)
 }
 
 template <typename T>
-__global__ void fill_kernel(T* data, size_t size, T val)
+__global__ void fill_kernel(StridedSpan<T> out, T val)
 {
-    CPPGRAD_CUDA_1D_LOOP(i, size)
+    CPPGRAD_CUDA_1D_LOOP(i, out.size())
     {
-        data[i] = val;
+        out[i] = val;
     }
 }
 
@@ -61,11 +61,17 @@ __global__ void pow_kernel(ConstStridedSpan<T> p1, ConstStridedSpan<T> p2, Strid
     }
 }
 
+namespace staticmem {
+    // statically alloc 64k for inter-block reduce
+    __device__ std::byte block_reduce[impl::CPPGRAD_CUDA_MAX_GRID_SIZE * 16];
+}
+
 template <typename T>
-__global__ void dot_kernel(ConstStridedSpan<T> p1, ConstStridedSpan<T> p2, StridedSpan<T> out, T* block_results)
+__global__ void dot_kernel(ConstStridedSpan<T> p1, ConstStridedSpan<T> p2, StridedSpan<T> out)
 {
     // we assume this kernel is always launched with CPPGRAD_CUDA_NUM_THREADS on block sz
     __shared__ T block_dot[impl::CPPGRAD_CUDA_NUM_THREADS];
+    T* block_results = reinterpret_cast<T*>(staticmem::block_reduce);
 
     unsigned int local_idx = threadIdx.x;
 

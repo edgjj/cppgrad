@@ -30,18 +30,16 @@ void CPUExecutor::strided_copy(const Tensor& from, Tensor& to)
 
 void CPUExecutor::fill(Tensor& tensor, std::byte* value)
 {
-    // we avoid OpWrapper there since we need to lift fill_value
-    auto fn = [&](auto tag) {
-        using Type = decltype(tag);
-
-        auto* ptr = reinterpret_cast<Type*>(tensor.data());
+    auto fn = [value](auto out, auto p1, auto p2) {
+        using Type = typename decltype(out)::Type;
         auto fill_value = *reinterpret_cast<Type*>(value);
 
-        // std::fill_n(OutputIt, Size, T& value)
-        std::fill_n(ptr, tensor.numel(), fill_value);
+        for (size_t k = 0; k < out.size(); k++) {
+            out[k] = fill_value;
+        }
     };
 
-    for_each_type(std::move(fn), tensor.dtype());
+    for_each_type(OpWrapper1D { std::move(fn), tensor, tensor, tensor }, tensor.dtype());
 }
 
 void CPUExecutor::sum(const Tensor& lhs, const Tensor& rhs, Tensor& dst)

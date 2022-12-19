@@ -29,7 +29,7 @@ struct CUDAExecutor : Executor {
     void cmp(const Tensor& lhs, const Tensor& rhs, Tensor& dst, CompareType cmp_type) override;
 
 private:
-    std::byte* _reduce_mem;
+    CUDA& _parent;
 };
 
 }

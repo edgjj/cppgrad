@@ -41,7 +41,8 @@ struct StridedSpan {
         : _data(reinterpret_cast<T*>(t.data()))
         , _size(t.numel())
     {
-        _stride = std::is_sorted(t.strides().begin(), t.strides().end()) ? *t.strides().rbegin() : *t.strides().begin();
+        // contiguous tensor has reverse-sorted strides
+        _stride = std::is_sorted(t.strides().begin(), t.strides().end()) ? *t.strides().begin() : *t.strides().rbegin();
         _stride /= sizeof(T);
     }
 

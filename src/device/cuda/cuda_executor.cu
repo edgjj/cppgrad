@@ -9,10 +9,8 @@
 namespace cppgrad::impl {
 
 CUDAExecutor::CUDAExecutor(CUDA& parent_device)
+    : _parent(parent_device)
 {
-    // pre-allocate memory for reduce ops
-    // kernels should care of proper memory initialization.
-    _reduce_mem = parent_device.allocate(CPPGRAD_CUDA_MAX_GRID_SIZE * 16, std::align_val_t(0));
 }
 
 void CUDAExecutor::copy(const std::byte* from, std::byte* to, std::size_t count, CopyType copy_type)
@@ -46,17 +44,16 @@ void CUDAExecutor::strided_copy(const Tensor& from, Tensor& to)
 
 void CUDAExecutor::fill(Tensor& tensor, std::byte* value)
 {
-    auto fn = [&](auto tag) {
-        using Type = decltype(tag);
+    auto fn = [value](auto out, auto p1, auto p2) {
+        using Type = typename decltype(out)::Type;
 
-        auto v = reinterpret_cast<Type*>(value);
-        auto out = reinterpret_cast<Type*>(tensor.data());
+        auto fill_value = *reinterpret_cast<Type*>(value);
 
-        CPPGRAD_CUDA_LAUNCH(impl::fill_kernel, tensor.numel())
-        (out, tensor.numel(), *v);
+        CPPGRAD_CUDA_LAUNCH(fill_kernel, out.size())
+        (out, fill_value);
     };
 
-    for_each_type(std::move(fn), tensor.dtype());
+    for_each_type(OpWrapper1D { std::move(fn), tensor, tensor, tensor }, tensor.dtype());
 }
 
 void CUDAExecutor::sum(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
@@ -101,12 +98,11 @@ void CUDAExecutor::pow(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 
 void CUDAExecutor::dot(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 {
-    // matrix mul
-    auto fn = [blk_results = _reduce_mem](auto out, auto p1, auto p2) {
+    auto fn = [](auto out, auto p1, auto p2) {
         using Type = typename decltype(out)::Type;
 
         CPPGRAD_CUDA_LAUNCH(dot_kernel, p1.size())
-        (p1, p2, out, reinterpret_cast<Type*>(blk_results));
+        (p1, p2, out);
     };
 
     // we'll use that in incorrect way
