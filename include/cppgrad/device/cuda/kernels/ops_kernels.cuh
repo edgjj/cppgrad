@@ -63,7 +63,7 @@ __global__ void pow_kernel(ConstStridedSpan<T> p1, ConstStridedSpan<T> p2, Strid
 
 namespace staticmem {
     // statically alloc 64k for inter-block reduce
-    __device__ std::byte block_reduce[impl::CPPGRAD_CUDA_MAX_GRID_SIZE * 16];
+    __device__ static std::byte block_reduce[impl::CPPGRAD_CUDA_MAX_GRID_SIZE * 16];
 }
 
 template <typename T>
@@ -103,7 +103,7 @@ __global__ void dot_kernel(ConstStridedSpan<T> p1, ConstStridedSpan<T> p2, Strid
 
         if (local_idx == 0) {
             unsigned int& retirementCount = *reinterpret_cast<unsigned int*>(out.data());
-            auto ticket = atomicInc(&retirementCount, 1);
+            auto ticket = atomicInc(&retirementCount, gridDim.x); // ((old >= val) ? 0 : (old+1))
 
             // check if block is actually last; reduce by last thread available
             if (ticket == gridDim.x - 1) {

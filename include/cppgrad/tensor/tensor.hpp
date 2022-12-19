@@ -71,7 +71,7 @@ public:
          *  We use HostToDevice there since DeviceType might be CUDA, or other non-CPU type.
          *  On CPU it's no-op.
          */
-        result.executor().copy(reinterpret_cast<std::byte*>(blob), result.data(), type_sz * result.numel(), impl::HostToDevice);
+        result.executor().copy(reinterpret_cast<std::byte*>(blob), result.data(), result.nbytes(), impl::HostToDevice);
         return result;
     }
 

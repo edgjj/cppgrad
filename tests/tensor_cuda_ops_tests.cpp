@@ -4,6 +4,8 @@
 #include <cppgrad/exceptions/type_error.hpp>
 #include <gtest/gtest.h>
 
+#include <random>
+
 using namespace cppgrad;
 
 TEST(TensorCUDAOpsTests, SumTest)
@@ -59,6 +61,30 @@ TEST(TensorCUDAOpsTests, DotTest)
     auto t3 = cppgrad::mm(t1, t2);
 
     ASSERT_EQ(t3.item<i32>(), 849);
+}
+
+TEST(TensorCUDAOpsTests, DotMultiBlockTest)
+{
+    std::mt19937 engine(std::random_device {}());
+    std::uniform_int_distribution<int> dist { 1, 10 };
+
+    std::vector<int> v1, v2;
+    // occupy 32 blocks
+    size_t num_elements = 128 * 32;
+    for (size_t i = 0; i < num_elements; i++) {
+        v1.push_back(dist(engine));
+        v2.push_back(dist(engine));
+    }
+
+    auto t1 = Tensor::from_blob<i32, CUDA>(v1.data(), { num_elements });
+    auto t2 = Tensor::from_blob<i32, CUDA>(v2.data(), { num_elements });
+    ASSERT_EQ(t1[0].item<i32>(), v1[0]);
+
+    auto t3 = cppgrad::mm(t1, t2);
+
+    auto value = std::inner_product(v1.begin(), v1.end(), v2.begin(), 0);
+
+    ASSERT_EQ(t3.item<i32>(), value);
 }
 
 TEST(TensorCUDAOpsTests, PowTest)
