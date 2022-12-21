@@ -4,6 +4,9 @@ file (GLOB
     src/device/cpu/*.cpp
 )
 
+include (cmake/setup_asyncpp.cmake)
+cppgrad_setup_asyncpp()
+
 add_library(cppgrad_cpu_backend 
     STATIC
     ${CPU_SOURCES}
@@ -11,6 +14,7 @@ add_library(cppgrad_cpu_backend
 )
 
 target_include_directories(cppgrad_cpu_backend PRIVATE include/)
+target_link_libraries(cppgrad_cpu_backend PRIVATE Async++)
 
 list(APPEND 
     CPPGRAD_INTERNAL_LIBS 
