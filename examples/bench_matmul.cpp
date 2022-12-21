@@ -57,6 +57,16 @@ void warmup_device(size_t n_runs)
     }
 }
 
+template <typename DeviceType>
+void sync()
+{
+#ifdef CPPGRAD_HAS_CUDA
+    if constexpr (std::is_same_v<DeviceType, CUDA>) {
+        CUDA::sync();
+    }
+#endif
+}
+
 using TestResult = std::pair<double, double>;
 
 template <DType T, typename DeviceType>
@@ -73,8 +83,7 @@ TestResult bench_device(size_t mat_size, size_t n_runs)
     for (size_t k = 0; k < n_runs; k++) {
         auto start = std::chrono::high_resolution_clock::now();
         Tensor t3 = cppgrad::mm(t1, t2);
-        // force sync
-        auto v = t3(0, 0).item<T>();
+        sync<DeviceType>(); // force sync
         auto end = std::chrono::high_resolution_clock::now();
 
         std::chrono::duration<double, std::milli> run_ms = end - start;

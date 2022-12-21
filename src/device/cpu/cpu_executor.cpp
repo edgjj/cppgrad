@@ -102,11 +102,11 @@ void CPUExecutor::dot(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 
 void CPUExecutor::matmul(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 {
-    auto fn = [&](auto out, auto p1, auto p2) {
+    auto fn = [](auto out, auto p1, auto p2) {
         using Type = typename decltype(out)::Type;
 
-        for (size_t i = 0; i < p1.size(0); i++) { // row
-            for (size_t j = 0; j < p2.size(1); j++) { // col
+        for (size_t i = 0; i < out.size(0); i++) { // row
+            for (size_t j = 0; j < out.size(1); j++) { // col
                 // null elem
                 out(i, j) = Type(0);
 

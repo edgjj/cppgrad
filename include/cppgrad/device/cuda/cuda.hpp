@@ -17,6 +17,8 @@ struct CUDA : Device {
     std::string_view type() override;
 
     static int num_devices();
+    static bool clear_cache();
+    static void sync();
 };
 
 }
