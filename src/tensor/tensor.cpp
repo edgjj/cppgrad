@@ -127,7 +127,7 @@ Tensor::Tensor(std::initializer_list<Tensor> values)
 }
 
 template <typename Type>
-void Tensor::fill(Type value, size_t count)
+void Tensor::fill(Type value)
 {
     CPPGRAD_CHECK_EQ(rtype_v<Type>, _storage->_type_id,
         exceptions::TypeError,
@@ -406,12 +406,12 @@ template Tensor::Tensor(std::initializer_list<dtype_t<f32>> values);
 template Tensor::Tensor(std::initializer_list<dtype_t<f64>> values);
 
 /* Tensor::fill */
-template void Tensor::fill<dtype_t<u32>>(dtype_t<u32> value, size_t count);
-template void Tensor::fill<dtype_t<u64>>(dtype_t<u64> value, size_t count);
-template void Tensor::fill<dtype_t<i32>>(dtype_t<i32> value, size_t count);
-template void Tensor::fill<dtype_t<i64>>(dtype_t<i64> value, size_t count);
-template void Tensor::fill<dtype_t<f32>>(dtype_t<f32> value, size_t count);
-template void Tensor::fill<dtype_t<f64>>(dtype_t<f64> value, size_t count);
+template void Tensor::fill<dtype_t<u32>>(dtype_t<u32> value);
+template void Tensor::fill<dtype_t<u64>>(dtype_t<u64> value);
+template void Tensor::fill<dtype_t<i32>>(dtype_t<i32> value);
+template void Tensor::fill<dtype_t<i64>>(dtype_t<i64> value);
+template void Tensor::fill<dtype_t<f32>>(dtype_t<f32> value);
+template void Tensor::fill<dtype_t<f64>>(dtype_t<f64> value);
 
 /* Tensor::item */
 template dtype_t<u32> Tensor::item<u32>();

@@ -43,7 +43,7 @@ public:
         size_t alignment = alignof(dtype_t<DataType>))
     {
         auto result = create_dirty(shape, DataType, alignment, new DeviceType());
-        result.fill(fill_value, result.numel());
+        result.fill(fill_value);
 
         return result;
     }
@@ -193,10 +193,9 @@ public:
      *
      * @tparam T
      * @param value
-     * @param count
      */
     template <typename Type>
-    void fill(Type value, size_t count);
+    void fill(Type value);
 
     /**
      * @brief Queries scalar from tensor, given type T.
