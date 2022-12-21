@@ -2,9 +2,10 @@
 #define CPPGRAD_CUDA_DEFS_HPP
 
 #include <algorithm>
-#include <vector_types.h>
 
 namespace cppgrad {
+
+#ifdef __CUDACC__
 
 namespace impl {
 
@@ -74,7 +75,6 @@ namespace impl {
  * ATM used in StridedSpan.
  *
  */
-#ifdef __CUDACC__
 #define CPPGRAD_CUDA_FN __host__ __device__
 #else
 #define CPPGRAD_CUDA_FN
