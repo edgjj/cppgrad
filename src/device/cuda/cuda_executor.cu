@@ -113,26 +113,11 @@ void CUDAExecutor::dot(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 
 void CUDAExecutor::matmul(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 {
-    // auto fn = [&](auto tag) {
-    //     using Type = decltype(tag);
-    //     auto p1 = reinterpret_cast<const Type*>(lhs.data());
-    //     auto p2 = reinterpret_cast<const Type*>(rhs.data());
-
-    //     auto out = reinterpret_cast<Type*>(dst.data());
-
-    //     CPPGRAD_CUDA_LAUNCH(matmul_kernel, dst.numel())
-    //     (p1, p2, out, dst.numel());
-    // };
-
-    // for_each_type(std::move(fn), dst.dtype());
-
     auto fn = [&](auto out, auto p1, auto p2) {
-        // CPPGRAD_CUDA_LAUNCH(matmul_kernel, dst.numel())
-        // (p1, p2, out);
+        // use p1 rows as dimX & p2 cols as dimY; result shape is {p1_rows, p2_cols}
+        CPPGRAD_CUDA_LAUNCH_2D(matmul_kernel, out.size(0), out.size(1)) // was p2.size(1), p2.size(0)
+        (p1, p2, out);
     };
-
-    // we'll use that first in incorrect way
-    cudaMemset(dst.data(), 0, dst.nbytes());
 
     for_each_type(OpWrapper2D { std::move(fn), dst, lhs, rhs }, dst.dtype());
 }

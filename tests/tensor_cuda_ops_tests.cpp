@@ -158,4 +158,58 @@ TEST(TensorCUDAOpsTests, MatmulTestNonEqShape)
     ASSERT_EQ(t3(1, 1).item<i32>(), 42);
 }
 
+TEST(TensorCUDAOpsTests, MatmulMultiblockTestNonEqShape)
+{
+    // 2 block test
+    Tensor t1 = Tensor {
+        { 1, 2, 3, 2, 4, 8, 1, 2, 5, 3, 7, 9, 2, 5, 1, 5, 1, 2, 3, 2, 4, 8, 1, 2, 5, 3, 7, 9, 2, 5, 1, 12 },
+        { 9, 4, 5, 2, 4, 8, 1, 2, 5, 3, 7, 9, 2, 5, 1, 5, 1, 2, 3, 2, 4, 8, 1, 2, 5, 3, 7, 9, 2, 12, 6, 2 }
+    }.cuda();
+
+    Tensor t2 = Tensor {
+        { 4, 3 },
+        { 1, 0 },
+        { 9, 3 },
+        { 7, 12 },
+        { 4, 3 },
+        { 1, 0 },
+        { 9, 3 },
+        { 7, 12 },
+        { 4, 3 },
+        { 1, 0 },
+        { 9, 3 },
+        { 7, 12 },
+        { 4, 3 },
+        { 1, 0 },
+        { 9, 3 },
+        { 7, 12 },
+        { 4, 3 },
+        { 1, 0 },
+        { 9, 3 },
+        { 7, 12 },
+        { 4, 3 },
+        { 1, 0 },
+        { 9, 3 },
+        { 7, 12 },
+        { 4, 3 },
+        { 1, 0 },
+        { 9, 3 },
+        { 7, 12 },
+        { 4, 3 },
+        { 1, 0 },
+        { 9, 3 },
+        { 7, 12 }
+    }.cuda();
+
+    auto t3 = cppgrad::mm(t1, t2);
+    std::vector<size_t> shape { 2, 2 };
+
+    ASSERT_EQ(t3.shape(), shape);
+
+    ASSERT_EQ(t3(0, 0).item<i32>(), 649);
+    ASSERT_EQ(t3(0, 1).item<i32>(), 660);
+    ASSERT_EQ(t3(1, 0).item<i32>(), 683);
+    ASSERT_EQ(t3(1, 1).item<i32>(), 585);
+}
+
 #endif

@@ -70,7 +70,8 @@ template <typename T>
 __global__ void dot_kernel(ConstStridedSpan<T> p1, ConstStridedSpan<T> p2, StridedSpan<T> out)
 {
     // we assume this kernel is always launched with CPPGRAD_CUDA_NUM_THREADS on block sz
-    __shared__ T block_dot[impl::CPPGRAD_CUDA_NUM_THREADS];
+    // 1 kb block shmem
+    __shared__ T block_dot[CPPGRAD_CUDA_NUM_THREADS];
     T* block_results = reinterpret_cast<T*>(staticmem::block_reduce);
 
     unsigned int local_idx = threadIdx.x;
@@ -119,9 +120,22 @@ __global__ void dot_kernel(ConstStridedSpan<T> p1, ConstStridedSpan<T> p2, Strid
     }
 }
 
+// naive mm kernel
 template <typename T>
 __global__ void matmul_kernel(ConstStridedSpan2D<T> p1, ConstStridedSpan2D<T> p2, StridedSpan2D<T> out)
 {
+    unsigned int row = blockIdx.x * blockDim.x + threadIdx.x;
+    unsigned int col = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (row < out.size(0) && col < out.size(1)) {
+        T temp = T(0);
+
+        for (unsigned int k = 0; k < p2.size(0); k++) { // or p1.size(0)
+            temp += p1(row, k) * p2(k, col);
+        }
+
+        out(row, col) = temp;
+    }
 }
 
 }

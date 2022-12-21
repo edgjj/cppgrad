@@ -81,12 +81,9 @@ Tensor mm(const Tensor& lhs, const Tensor& rhs)
 
     // if not matmul
     if (lhs.shape() != rhs.shape() || lhs.shape().size() != 1) {
-        CPPGRAD_CHECK_EQ(lhs.shape()[0], rhs.shape()[1],
+        CPPGRAD_CHECK_EQ(lhs.shape()[1], rhs.shape()[0],
             exceptions::GenericError,
-            "LHS rows size not eq to RHS cols");
-        CPPGRAD_CHECK_EQ(rhs.shape()[0], lhs.shape()[1],
-            exceptions::GenericError,
-            "RHS rows size not eq to LHS cols");
+            "LHS cols size not eq to RHS rows");
 
         auto out = Tensor::create_dirty({ lhs.shape()[0], rhs.shape()[1] }, lhs.dtype(), lhs.get_align(), lhs.device().clone());
         auto& executor = out.device().get_executor();
