@@ -120,20 +120,43 @@ __global__ void dot_kernel(ConstStridedSpan<T> p1, ConstStridedSpan<T> p2, Strid
     }
 }
 
-// naive mm kernel
+// tiled mm kernel
 template <typename T>
 __global__ void matmul_kernel(ConstStridedSpan2D<T> p1, ConstStridedSpan2D<T> p2, StridedSpan2D<T> out)
 {
-    unsigned int row = blockIdx.x * blockDim.x + threadIdx.x;
-    unsigned int col = blockIdx.y * blockDim.y + threadIdx.y;
+    // CPPGRAD_CUDA_NUM_THREADS_2D_X/Y is tile sz
+    __shared__ T tile_p1[CPPGRAD_CUDA_NUM_THREADS_2D_X][CPPGRAD_CUDA_NUM_THREADS_2D_Y];
+    __shared__ T tile_p2[CPPGRAD_CUDA_NUM_THREADS_2D_X][CPPGRAD_CUDA_NUM_THREADS_2D_Y];
 
-    if (row < out.size(0) && col < out.size(1)) {
-        T temp = T(0);
+    unsigned int row = blockIdx.y * blockDim.y + threadIdx.y;
+    unsigned int col = blockIdx.x * blockDim.x + threadIdx.x;
 
-        for (unsigned int k = 0; k < p2.size(0); k++) { // or p1.size(0)
-            temp += p1(row, k) * p2(k, col);
+    unsigned int n_tiles = 1 + ((p2.size(0) - 1) / CPPGRAD_CUDA_NUM_THREADS_2D_X); // or (p1.size(1))
+
+    auto tX = threadIdx.x;
+    auto tY = threadIdx.y;
+
+    T temp { 0 };
+    for (unsigned int t = 0; t < n_tiles; t++) {
+
+        tile_p1[tY][tX] = row < p1.size(0) && t * CPPGRAD_CUDA_NUM_THREADS_2D_X + tX < p1.size(1)
+            ? p1(row, t * CPPGRAD_CUDA_NUM_THREADS_2D_X + tX)
+            : T(0);
+
+        tile_p2[tY][tX] = t * CPPGRAD_CUDA_NUM_THREADS_2D_Y + tY < p2.size(0) && col < p2.size(1)
+            ? p2(t * CPPGRAD_CUDA_NUM_THREADS_2D_Y + tY, col)
+            : T(0);
+
+        __syncthreads();
+
+        for (unsigned int k = 0; k < CPPGRAD_CUDA_NUM_THREADS_2D_X; k++) {
+            temp += tile_p1[tY][k] * tile_p2[k][tX];
         }
 
+        __syncthreads();
+    }
+
+    if (row < out.size(0) && col < out.size(1)) {
         out(row, col) = temp;
     }
 }

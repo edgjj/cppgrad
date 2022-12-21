@@ -46,7 +46,7 @@ struct StridedSpan {
         _stride /= sizeof(T);
     }
 
-    CPPGRAD_CUDA_FN T& operator[](size_t index)
+    inline CPPGRAD_CUDA_FN T& operator[](size_t index)
     {
         return *(_data + index * _stride);
     }
@@ -61,7 +61,7 @@ struct StridedSpan {
         return _stride == 1;
     }
 
-    CPPGRAD_CUDA_FN T* data()
+    inline CPPGRAD_CUDA_FN T* data()
     {
         return _data;
     }
@@ -95,7 +95,7 @@ struct StridedSpan2D {
         assert(t.strides().size() == 2);
     }
 
-    CPPGRAD_CUDA_FN T& operator()(size_t row, size_t col)
+    inline CPPGRAD_CUDA_FN T& operator()(size_t row, size_t col)
     {
         return *(_data + row * _strides[0] + col * _strides[1]);
     }

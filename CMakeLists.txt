@@ -5,6 +5,12 @@ project(cppgrad VERSION 0.0.1 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED)
 
+if (MSVC)
+	add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:/MP;/fp:fast;>")
+else()
+	add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-ffast-math>")
+endif()
+
 string(
     COMPARE EQUAL
     "${CMAKE_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}"
@@ -16,7 +22,6 @@ set(CPPGRAD_MPI OFF CACHE BOOL "Build with distributed MPI compute capatibilitie
 
 # to be used
 set(CPPGRAD_INTERNAL_LIBS "") 
-
 
 include (cmake/build_extras.cmake)
 
@@ -54,6 +59,7 @@ target_link_libraries(cppgrad PRIVATE ${CPPGRAD_INTERNAL_LIBS})
 set_target_properties(cppgrad
     PROPERTIES LINKER_LANGUAGE CXX
 )
+
 
 if (IS_TOP_PROJECT)
 	if (BUILD_TESTS)

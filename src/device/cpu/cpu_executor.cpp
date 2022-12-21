@@ -1,4 +1,5 @@
 #include "cppgrad/device/cpu/cpu_executor.hpp"
+#include "cppgrad/device/cpu/cpu_parallel.hpp"
 #include "cppgrad/exceptions/generic_error.hpp"
 #include "cppgrad/tensor/ops/op_wrapper.hpp"
 #include "cppgrad/tensor/tensor.hpp"
@@ -102,16 +103,22 @@ void CPUExecutor::dot(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 
 void CPUExecutor::matmul(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 {
-    auto fn = [](auto out, auto p1, auto p2) {
+    auto fn = [&](auto out, auto p1, auto p2) {
         using Type = typename decltype(out)::Type;
 
         for (size_t i = 0; i < out.size(0); i++) { // row
-            for (size_t j = 0; j < out.size(1); j++) { // col
-                // null elem
-                out(i, j) = Type(0);
+            for (size_t k = 0; k < p2.size(0); k++) { // row-col advance
 
-                for (size_t k = 0; k < p2.size(0); k++) { // row-col advance
-                    out(i, j) += p1(i, k) * p2(k, j);
+                auto acc = Type(0);
+
+                if (k == 0) {
+                    for (size_t j = 0; j < out.size(1); j++) { // col
+                        out(i, j) = p1(i, k) * p2(k, j);
+                    }
+                } else {
+                    for (size_t j = 0; j < out.size(1); j++) { // col
+                        out(i, j) += p1(i, k) * p2(k, j);
+                    }
                 }
             }
         }
@@ -147,5 +154,4 @@ void CPUExecutor::tanh(const Tensor& lhs, Tensor& dst)
 void CPUExecutor::cmp(const Tensor& lhs, const Tensor& rhs, Tensor& dst, CompareType cmp_type)
 {
 }
-
 }

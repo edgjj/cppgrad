@@ -111,11 +111,11 @@ int main()
         std::cout << "[ bench ] Benchmarking " << i << "x" << i << " matrix multiply." << std::endl;
 
         auto [cpu_time, cpu_bw] = bench_device<f32, CPU>(i, N_RUNS);
-        std::cout << "\t[ bench ] CPU! avg_time: " << cpu_time << " ms; avg_bandwidth: " << cpu_bw << " GiB/s " << std::endl;
+        std::cout << "\t[ CPU! ] avg_time: " << cpu_time << " ms; avg_bandwidth: " << cpu_bw << " GiB/s " << std::endl;
 
 #ifdef CPPGRAD_HAS_CUDA
         auto [gpu_time, gpu_bw] = bench_device<f32, CUDA>(i, N_RUNS);
-        std::cout << "\t[ bench ] GPU (CUDA)! avg_time: " << gpu_time << " ms; avg_bandwidth: " << gpu_bw << " GiB/s " << std::endl;
+        std::cout << "\t[ GPU (CUDA)! ] avg_time: " << gpu_time << " ms; avg_bandwidth: " << gpu_bw << " GiB/s " << std::endl;
 #endif
     }
 }
