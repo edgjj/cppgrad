@@ -78,9 +78,9 @@ TestResult bench_device(size_t vec_size, size_t n_runs)
 
     for (size_t k = 0; k < n_runs; k++) {
         auto start = std::chrono::high_resolution_clock::now();
-        auto t3 = cppgrad::mm(t1, t2);
+        Tensor t3 = cppgrad::mm(t1, t2);
         // force sync
-        auto v = t3(0).item<T>();
+        auto v = t3[0].item<T>();
         auto end = std::chrono::high_resolution_clock::now();
 
         std::chrono::duration<double, std::milli> run_ms = end - start;
@@ -100,15 +100,19 @@ int main()
     std::cout << "[ bench ] N runs per bench: " << N_RUNS << std::endl;
     std::cout << "[ bench ] Warming up... " << std::endl;
 
+#ifdef CPPGRAD_HAS_CUDA
     warmup_device<CUDA>(N_RUNS);
+#endif
 
     for (auto& i : sizes) {
         std::cout << "[ bench ] Benchmarking " << i * i << " vector's dot product." << std::endl;
 
         auto [cpu_time, cpu_bw] = bench_device<f32, CPU>(i * i, N_RUNS);
-        auto [gpu_time, gpu_bw] = bench_device<f32, CUDA>(i * i, N_RUNS);
-
         std::cout << "\t[ bench ] CPU! avg_time: " << cpu_time << " ms; avg_bandwidth: " << cpu_bw << " GiB/s " << std::endl;
+
+#ifdef CPPGRAD_HAS_CUDA
+        auto [gpu_time, gpu_bw] = bench_device<f32, CUDA>(i * i, N_RUNS);
         std::cout << "\t[ bench ] GPU (CUDA)! avg_time: " << gpu_time << " ms; avg_bandwidth: " << gpu_bw << " GiB/s " << std::endl;
+#endif
     }
 }
