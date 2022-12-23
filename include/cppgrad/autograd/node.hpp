@@ -31,6 +31,11 @@ private:
     tensor_list _edges;
 };
 
+namespace impl {
+    // since apply() needs complete Tensoor, we do this
+    void apply_finish(tensor_list& outputs, std::shared_ptr<Node>& node);
+}
+
 template <typename Fn>
 struct CustomNode {
     static tensor_list apply(tensor_list inputs)
@@ -40,11 +45,8 @@ struct CustomNode {
         op->set_edges(inputs);
         auto outputs = op->forward(std::move(inputs)); // consume inputs
 
-        for (auto& i : outputs) {
-            i.set_grad_fn(op);
-        }
-
-        return outputs;
+        impl::apply_finish(outputs, op);
+        return std::move(outputs);
     }
 };
 
