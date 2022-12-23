@@ -165,8 +165,8 @@ public:
     }
 
     // default constructors
-    Tensor(const Tensor&);
-    Tensor(Tensor&&);
+    Tensor(const Tensor&) = default;
+    Tensor(Tensor&&) = default;
 
     /**
      * @brief Copy assignment.
@@ -411,8 +411,6 @@ private:
     Tensor(std::shared_ptr<impl::TensorData> base_storage);
 
 private:
-    std::unique_ptr<autograd::AutogradInterface> _autograd_context;
-
     std::shared_ptr<impl::TensorData> _storage;
     // duplicate for views
     std::shared_ptr<impl::TensorData> _base;

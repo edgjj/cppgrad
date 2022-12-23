@@ -8,18 +8,6 @@
 
 namespace cppgrad {
 
-Tensor::Tensor(const Tensor& other)
-    : _storage(other._storage)
-    , _base(other._base)
-{
-}
-
-Tensor::Tensor(Tensor&& other)
-    : _storage(std::move(other._storage))
-    , _base(std::move(other._base))
-{
-}
-
 Tensor& Tensor::operator=(const Tensor& other)
 {
     // just return shallow copy for empty case
@@ -350,56 +338,56 @@ size_t Tensor::get_align() const
 
 Tensor& Tensor::grad()
 {
-    if (!_autograd_context) {
-        _autograd_context = autograd::AutogradContextFactory::make();
+    if (!_storage->_autograd_context) {
+        _storage->_autograd_context = autograd::AutogradContextFactory::make();
     }
 
-    return _autograd_context->grad();
+    return _storage->_autograd_context->grad();
 };
 
 const Tensor& Tensor::grad() const
 {
-    if (!_autograd_context) {
+    if (!_storage->_autograd_context) {
         return autograd::AutogradContextFactory::empty_tensor();
     }
 
-    return _autograd_context->grad();
+    return _storage->_autograd_context->grad();
 }
 
 void Tensor::set_grad_fn(std::shared_ptr<autograd::Node> new_grad_fn)
 {
-    if (!_autograd_context) {
-        _autograd_context = autograd::AutogradContextFactory::make();
+    if (!_storage->_autograd_context) {
+        _storage->_autograd_context = autograd::AutogradContextFactory::make();
     }
 
-    _autograd_context->set_grad_fn(std::move(new_grad_fn));
+    _storage->_autograd_context->set_grad_fn(std::move(new_grad_fn));
 }
 
 std::shared_ptr<autograd::Node>& Tensor::grad_fn()
 {
-    if (!_autograd_context) {
-        _autograd_context = autograd::AutogradContextFactory::make();
+    if (!_storage->_autograd_context) {
+        _storage->_autograd_context = autograd::AutogradContextFactory::make();
     }
 
-    return _autograd_context->grad_fn();
+    return _storage->_autograd_context->grad_fn();
 }
 
 void Tensor::set_requires_grad(bool new_requires_grad)
 {
-    if (!_autograd_context) {
-        _autograd_context = autograd::AutogradContextFactory::make();
+    if (!_storage->_autograd_context) {
+        _storage->_autograd_context = autograd::AutogradContextFactory::make();
     }
 
-    _autograd_context->set_requires_grad(new_requires_grad);
+    _storage->_autograd_context->set_requires_grad(new_requires_grad);
 }
 
 bool Tensor::requires_grad() const
 {
-    if (!_autograd_context) {
+    if (!_storage->_autograd_context) {
         return false;
     }
 
-    return _autograd_context->requires_grad();
+    return _storage->_autograd_context->requires_grad();
 }
 
 Tensor::~Tensor()

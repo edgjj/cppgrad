@@ -4,6 +4,7 @@
 #include <new> // std::align_val_t
 #include <vector> // std::vector
 
+#include "cppgrad/autograd/context.hpp"
 #include "cppgrad/tensor/typing.hpp"
 
 namespace cppgrad {
@@ -60,6 +61,8 @@ namespace impl {
          * @brief ID of current type stored in Tensor.
          */
         DType _type_id { undefined };
+
+        std::unique_ptr<autograd::AutogradInterface> _autograd_context;
     };
 
 }

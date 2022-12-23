@@ -14,15 +14,6 @@ struct Node {
     virtual tensor_list forward(tensor_list inputs) = 0;
     virtual tensor_list backward(tensor_list inputs) = 0;
 
-    tensor_list apply(tensor_list inputs)
-    {
-        auto result = forward(std::move(inputs));
-        // auto grad_fn =
-        // for (auto& i : result) {
-        //     // assign parents
-        // }
-    }
-
     void save_for_backward(const Tensor& variable)
     {
         _saved_data.push_back(variable);
@@ -38,6 +29,23 @@ struct Node {
 private:
     tensor_list _saved_data;
     tensor_list _edges;
+};
+
+template <typename Fn>
+struct CustomNode {
+    static tensor_list apply(tensor_list inputs)
+    {
+        std::shared_ptr<Node> op { new Fn() };
+
+        op->set_edges(inputs);
+        auto outputs = op->forward(std::move(inputs)); // consume inputs
+
+        for (auto& i : outputs) {
+            i.set_grad_fn(op);
+        }
+
+        return outputs;
+    }
 };
 
 }

@@ -5,6 +5,12 @@
 namespace cppgrad::autograd {
 
 struct AutogradContext : AutogradInterface {
+    AutogradContext()
+    {
+        // we can access some thread-local storage there to automatically set _requires_grad
+        // NoGradGuard moment
+    }
+
     Tensor& grad() override
     {
         return _grad;
@@ -36,7 +42,7 @@ struct AutogradContext : AutogradInterface {
     }
 
 private:
-    bool _requires_grad { false };
+    bool _requires_grad { true };
     Tensor _grad;
     std::shared_ptr<Node> _grad_fn; // can be shared between multiple Tensors
 };
