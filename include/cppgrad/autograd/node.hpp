@@ -2,6 +2,7 @@
 #define CPPGRAD_AUTOGRAD_NODE_HPP
 
 #include "cppgrad/tensor/tensor_fwd.hpp"
+#include <algorithm>
 #include <memory>
 #include <utility>
 #include <vector>
