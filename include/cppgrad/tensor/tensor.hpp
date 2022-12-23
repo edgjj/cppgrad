@@ -19,12 +19,15 @@
 #include "cppgrad/tensor/ops/binary_ops.hpp"
 #include "cppgrad/tensor/ops/unary_ops.hpp"
 
+// autograd
+#include "cppgrad/autograd/context.hpp"
+
 namespace cppgrad {
 
 /*
     may need a .contiguous() type thing to make transposed matrices flat
 */
-class Tensor {
+class Tensor : public autograd::AutogradInterface {
 public:
     /**
      * @brief Returns a Tensor of chosen shape, alignment and device, filled with some value.
@@ -162,8 +165,8 @@ public:
     }
 
     // default constructors
-    Tensor(const Tensor&) = default;
-    Tensor(Tensor&&) = default;
+    Tensor(const Tensor&);
+    Tensor(Tensor&&);
 
     /**
      * @brief Copy assignment.
@@ -352,6 +355,18 @@ public:
      */
     size_t get_align() const;
 
+    /*
+        @brief Autograd methods go here;
+
+        For documentation @see AutogradInterface
+    */
+    Tensor& grad() override;
+    const Tensor& grad() const override;
+    void set_grad_fn(std::shared_ptr<autograd::Node> new_grad_fn) override;
+    std::shared_ptr<autograd::Node>& grad_fn() override;
+    void set_requires_grad(bool new_requires_grad) override;
+    bool requires_grad() const override;
+
     ~Tensor();
 
 private:
@@ -396,6 +411,8 @@ private:
     Tensor(std::shared_ptr<impl::TensorData> base_storage);
 
 private:
+    std::unique_ptr<autograd::AutogradInterface> _autograd_context;
+
     std::shared_ptr<impl::TensorData> _storage;
     // duplicate for views
     std::shared_ptr<impl::TensorData> _base;

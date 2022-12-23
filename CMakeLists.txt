@@ -45,6 +45,7 @@ file (GLOB
 	CPPGRAD_SRC
 	src/*.cpp
 	src/tensor/*.cpp
+	src/autograd/*.cpp
 )
 
 add_library (cppgrad 

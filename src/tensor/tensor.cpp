@@ -8,6 +8,18 @@
 
 namespace cppgrad {
 
+Tensor::Tensor(const Tensor& other)
+    : _storage(other._storage)
+    , _base(other._base)
+{
+}
+
+Tensor::Tensor(Tensor&& other)
+    : _storage(std::move(other._storage))
+    , _base(std::move(other._base))
+{
+}
+
 Tensor& Tensor::operator=(const Tensor& other)
 {
     // just return shallow copy for empty case
@@ -334,6 +346,60 @@ bool Tensor::is_contiguous() const
 size_t Tensor::get_align() const
 {
     return (size_t)base_storage()->_alignment;
+}
+
+Tensor& Tensor::grad()
+{
+    if (!_autograd_context) {
+        _autograd_context = autograd::AutogradContextFactory::make();
+    }
+
+    return _autograd_context->grad();
+};
+
+const Tensor& Tensor::grad() const
+{
+    if (!_autograd_context) {
+        return autograd::AutogradContextFactory::empty_tensor();
+    }
+
+    return _autograd_context->grad();
+}
+
+void Tensor::set_grad_fn(std::shared_ptr<autograd::Node> new_grad_fn)
+{
+    if (!_autograd_context) {
+        _autograd_context = autograd::AutogradContextFactory::make();
+    }
+
+    _autograd_context->set_grad_fn(std::move(new_grad_fn));
+}
+
+std::shared_ptr<autograd::Node>& Tensor::grad_fn()
+{
+    if (!_autograd_context) {
+        _autograd_context = autograd::AutogradContextFactory::make();
+    }
+
+    return _autograd_context->grad_fn();
+}
+
+void Tensor::set_requires_grad(bool new_requires_grad)
+{
+    if (!_autograd_context) {
+        _autograd_context = autograd::AutogradContextFactory::make();
+    }
+
+    _autograd_context->set_requires_grad(new_requires_grad);
+}
+
+bool Tensor::requires_grad() const
+{
+    if (!_autograd_context) {
+        return false;
+    }
+
+    return _autograd_context->requires_grad();
 }
 
 Tensor::~Tensor()

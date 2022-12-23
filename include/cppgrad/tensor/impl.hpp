@@ -38,6 +38,10 @@ namespace impl {
          */
         std::byte* _chunk;
         /**
+         * @brief Pointer to Tensor's grad data;
+         */
+        std::byte* _grad_chunk;
+        /**
          * @brief Tensor data alignment in bytes.
          */
         std::align_val_t _alignment;
