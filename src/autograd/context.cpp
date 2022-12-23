@@ -2,12 +2,10 @@
 #include "cppgrad/autograd/node.hpp"
 #include "cppgrad/itertools/itertools.hpp"
 #include "cppgrad/tensor/tensor.hpp"
-#include <set>
+#include <iostream>
+#include <unordered_set>
 
 namespace cppgrad::autograd {
-
-using tensor_ptr_list = std::vector<Tensor*>;
-using tensor_ptr_set = std::set<Tensor*>;
 
 struct AutogradContext : AutogradInterface {
     AutogradContext()
@@ -64,76 +62,92 @@ const Tensor& AutogradContextFactory::empty_tensor()
 }
 
 namespace impl {
-    static void walk(Tensor& node, tensor_ptr_list& tensors, tensor_ptr_set& visited)
+
+    using tensor_list = std::vector<Tensor>;
+    using tensor_hash_set = std::unordered_set<Tensor>;
+
+    static void walk(Tensor& node, tensor_list& tensors, tensor_hash_set& visited)
     {
-        visited.emplace(&node);
+        visited.emplace(node);
 
-        for (auto& p : node.grad_fn()->edges()) {
-            if (visited.count(&p) == 0) {
-                walk(p, tensors, visited);
+        // check if tensor has grad_fn
+        if (node.grad_fn()) {
+            for (auto& p : node.grad_fn()->edges()) {
+                if (visited.count(p) == 0) {
+                    walk(p, tensors, visited);
+                }
             }
-        }
 
-        tensors.push_back(&node);
+            tensors.push_back(node);
+        }
     }
 
-    static tensor_ptr_list walk(Tensor& root)
+    static tensor_list walk(Tensor& root)
     {
-        tensor_ptr_set visited;
-        tensor_ptr_list tensors;
+        tensor_hash_set visited;
+        tensor_list tensors;
 
         walk(root, tensors, visited);
 
         return std::move(tensors);
     }
 
-    void backward(Tensor& root)
-    {
-        auto topo = walk(root);
-        auto any_requires = [](auto& edges) {
-            for (auto& i : edges) {
-                if (!i.requires_grad()) {
-                    return false;
-                }
+}
+
+void backward(Tensor& root)
+{
+    auto topo = impl::walk(root);
+    auto any_requires_grad = [](auto& edges) {
+        for (auto& i : edges) {
+            if (!i.requires_grad()) {
+                return false;
             }
+        }
 
-            return true;
-        };
+        return true;
+    };
 
-        // init root grad Tensor
-        root.grad() = Tensor::create_dirty(root.shape(), root.dtype(), root.get_align(), root.device().clone());
+    // init root grad Tensor
+    root.grad() = Tensor::create_dirty(root.shape(), root.dtype(), root.get_align(), root.device().clone());
 
-        // this is ugliest thing ever; to be changed with autocast fill
-        for_each_type(
-            [&](auto tag) {
-                using Type = decltype(tag);
-                root.fill(Type(1));
-            },
-            root.dtype());
+    // this is ugliest thing ever; to be changed with autocast fill
+    for_each_type(
+        [&](auto tag) {
+            using Type = decltype(tag);
+            root.grad().fill(Type(1));
+        },
+        root.grad().dtype());
 
-        // uh oh some crazy matches here
-        for (auto& i : itertools::reversed(topo)) {
-            auto& node = *i;
+    // uh oh some crazy matches here
+    for (auto& node : itertools::reversed(topo)) {
 
-            auto& grad_fn = node.grad_fn();
+        auto& grad_fn = node.grad_fn();
 
-            if (!any_requires(grad_fn->edges())) {
+        if (!any_requires_grad(grad_fn->edges())) {
+            continue;
+        }
+
+        auto grads = grad_fn->backward(node.grad());
+
+        for (auto [n, g] : itertools::combine(grad_fn->edges(), grads)) {
+            if (!n.requires_grad() || g.empty()) {
                 continue;
             }
 
-            auto grads = grad_fn->backward(node.grad());
-
-            for (auto [n, g] : itertools::combine(grad_fn->edges(), grads)) {
-                if (n.requires_grad() && !g.empty()) {
-                    n.grad() = std::move(g);
-                }
+            if (n.grad().empty()) {
+                n.grad() = std::move(g);
+            } else {
+                // accumulate grad; g executor is actually same as n.grad() executor
+                g.executor().sum(n.grad(), g, n.grad());
             }
-
-            // release grad_fn ownership for node
-            grad_fn.reset();
         }
+
+        // release grad_fn ownership for node
+        grad_fn.reset();
     }
 
+    // clear root grad tensor
+    root.grad() = Tensor();
 }
 
 }

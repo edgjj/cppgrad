@@ -6,60 +6,66 @@
 #include <utility>
 #include <vector>
 
-namespace cppgrad::autograd {
+namespace cppgrad {
 
 using tensor_list = std::vector<Tensor>;
 
-struct Node {
-    virtual tensor_list forward(tensor_list inputs) = 0;
-    virtual tensor_list backward(Tensor& grad) = 0;
+namespace autograd {
 
-    void set_edges(tensor_list input_edges)
-    {
-        _edges = std::move(input_edges);
+    struct Node {
+        virtual tensor_list forward(tensor_list inputs) = 0;
+        virtual tensor_list backward(Tensor& grad) = 0;
+
+        void set_edges(tensor_list input_edges)
+        {
+            _edges = std::move(input_edges);
+        }
+
+        tensor_list& edges()
+        {
+            return _edges;
+        }
+
+        virtual ~Node() = default;
+
+    protected:
+        template <typename... Tensors>
+        void save_for_backward(Tensors&&... variables)
+        {
+            _saved_data.insert(_saved_data.end(), { variables.clone()... });
+        }
+
+        tensor_list& saved()
+        {
+            return _saved_data;
+        }
+
+    private:
+        tensor_list _saved_data;
+        tensor_list _edges;
+    };
+
+    namespace impl {
+        // since apply() needs complete Tensoor, we do this
+        tensor_list apply_finish(tensor_list& outputs, std::shared_ptr<Node>& node);
     }
 
-    tensor_list& edges()
-    {
-        return _edges;
-    }
+    template <typename Fn>
+    struct CustomNode : Node {
+        static tensor_list apply(tensor_list inputs)
+        {
+            // check if at least 1 input requires grad; if not - just make pure forward call
+            if (std::find_if(inputs.begin(), inputs.end(), [](auto& t) { return t.requires_grad(); }) == inputs.end()) {
+                return Fn {}.forward(std::move(inputs));
+            }
 
-    virtual ~Node() = default;
+            std::shared_ptr<Node> op { new Fn() };
 
-protected:
-    void save_for_backward(const Tensor& variable)
-    {
-        _saved_data.push_back(variable);
-    }
-
-    tensor_list& saved()
-    {
-        return _saved_data;
-    }
-
-private:
-    tensor_list _saved_data;
-    tensor_list _edges;
-};
-
-namespace impl {
-    // since apply() needs complete Tensoor, we do this
-    void apply_finish(tensor_list& outputs, std::shared_ptr<Node>& node);
+            op->set_edges(inputs);
+            return impl::apply_finish(inputs, op);
+        }
+    };
 }
-
-template <typename Fn>
-struct CustomNode {
-    static tensor_list apply(tensor_list inputs)
-    {
-        std::shared_ptr<Node> op { new Fn() };
-
-        op->set_edges(inputs);
-        auto outputs = op->forward(std::move(inputs)); // consume inputs
-
-        impl::apply_finish(outputs, op);
-        return std::move(outputs);
-    }
-};
 
 }
 

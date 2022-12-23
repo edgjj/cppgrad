@@ -10,8 +10,8 @@ namespace cppgrad {
 
 Tensor& Tensor::operator=(const Tensor& other)
 {
-    // just return shallow copy for empty case
-    if (empty()) {
+    // just return shallow copy for empty case / not views
+    if (empty() || !is_view() && !other.is_view()) {
         _storage = other._storage;
         _base = other._base;
         return *this;
@@ -40,15 +40,11 @@ Tensor& Tensor::operator=(const Tensor& other)
 
 Tensor& Tensor::operator=(Tensor&& other)
 {
-    auto move_storage = [&]() -> Tensor& {
+    // just move if empty or both are not views
+    if (empty() || !is_view() && !other.is_view()) {
         _storage = std::move(other._storage);
         _base = std::move(other._base);
         return *this;
-    };
-
-    // just move if empty
-    if (empty()) {
-        return move_storage();
     }
 
     // check if assignment requirements satisfy
@@ -59,11 +55,6 @@ Tensor& Tensor::operator=(Tensor&& other)
     CPPGRAD_CHECK_EQ(dtype(), other.dtype(),
         exceptions::GenericError,
         "Assign (move) DType mismatch");
-
-    // we can move safely if both are not views
-    if (!is_view() && !other.is_view()) {
-        return move_storage();
-    }
 
     CPPGRAD_CHECK_EQ(device().type(), other.device().type(),
         exceptions::GenericError,
@@ -80,7 +71,7 @@ Tensor& Tensor::operator=(Tensor&& other)
 }
 
 Tensor::Tensor()
-    : Tensor(0)
+// : Tensor(0)
 {
 }
 
@@ -124,6 +115,11 @@ Tensor::Tensor(std::initializer_list<Tensor> values)
     for (size_t i = 0; i < values.size(); i++) {
         (*this)(i) = *(values.begin() + i);
     }
+}
+
+bool Tensor::operator==(const Tensor& rhs) const
+{
+    return _storage == rhs._storage;
 }
 
 template <typename Type>
@@ -388,6 +384,11 @@ bool Tensor::requires_grad() const
     }
 
     return _storage->_autograd_context->requires_grad();
+}
+
+void Tensor::backward()
+{
+    autograd::backward(*this);
 }
 
 Tensor::~Tensor()

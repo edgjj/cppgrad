@@ -5,11 +5,20 @@ namespace cppgrad::autograd {
 
 namespace impl {
 
-    void apply_finish(tensor_list& outputs, std::shared_ptr<Node>& node)
+    tensor_list apply_finish(tensor_list& inputs, std::shared_ptr<Node>& node)
     {
+        // i think it's possible to make apply without aggressive cloning, but maybe next time
+        for (auto& i : inputs) {
+            i = i.clone();
+        }
+
+        auto outputs = node->forward(std::move(inputs)); // consume inputs
+
         for (auto& i : outputs) {
             i.set_grad_fn(node);
         }
+
+        return std::move(outputs);
     }
 
 }

@@ -57,16 +57,12 @@ struct AutogradContextFactory {
     static const Tensor& empty_tensor();
 };
 
-namespace impl {
-
-    /**
-     * @brief Backward passes starting from root Tensor
-     *
-     * @param root
-     */
-    void backward(Tensor& root);
-
-}
+/**
+ * @brief Backward passes starting from root Tensor
+ *
+ * @param root
+ */
+void backward(Tensor& root);
 
 }
 

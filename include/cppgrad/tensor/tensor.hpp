@@ -192,6 +192,16 @@ public:
     Tensor(std::initializer_list<Tensor> values);
 
     /**
+     * @brief Tensor equality comparison
+     * Doesn't compare Tensors actual contents, compares Tensor's storages.
+     *
+     * @param rhs
+     * @return true
+     * @return false
+     */
+    bool operator==(const Tensor& rhs) const;
+
+    /**
      * @brief Fills Tensor with desired type
      *
      * @tparam T
@@ -302,6 +312,14 @@ public:
     Device& device() const;
 
     /**
+     * @brief Utility method to get executor of attached device
+     * UB if Tensor has no device.
+     *
+     * @return impl::Executor&
+     */
+    impl::Executor& executor() const;
+
+    /**
      * @brief Checks if current Tensor data is located on CUDA device.
      *
      */
@@ -367,7 +385,14 @@ public:
     void set_requires_grad(bool new_requires_grad) override;
     bool requires_grad() const override;
 
+    /**
+     * @brief Runs backward pass starting from this Tensor.
+     *
+     */
+    void backward();
+
     ~Tensor();
+    friend struct std::hash<Tensor>;
 
 private:
     /**
@@ -397,13 +422,6 @@ private:
     const std::shared_ptr<impl::TensorData>& base_storage() const;
 
     /**
-     * @brief Utility method to get executor of attached device
-     *
-     * @return impl::Executor&
-     */
-    impl::Executor& executor() const;
-
-    /**
      * @brief Construct a new Tensor object from parent's TensorData.
      *
      * @param base_storage Parent's TensorData
@@ -417,5 +435,14 @@ private:
 };
 
 }
+
+// hash specialization
+template <>
+struct std::hash<cppgrad::Tensor> {
+    [[nodiscard]] size_t operator()(const cppgrad::Tensor& tensor) const noexcept
+    {
+        return std::hash<std::shared_ptr<cppgrad::impl::TensorData>>()(tensor._storage);
+    }
+};
 
 #endif
