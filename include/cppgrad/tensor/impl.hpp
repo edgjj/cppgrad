@@ -37,10 +37,7 @@ namespace impl {
          * @brief Pointer to row-major stored Tensor's data.
          */
         std::byte* _chunk;
-        /**
-         * @brief Pointer to Tensor's grad data;
-         */
-        std::byte* _grad_chunk;
+
         /**
          * @brief Tensor data alignment in bytes.
          */
