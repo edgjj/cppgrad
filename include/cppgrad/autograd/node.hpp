@@ -12,19 +12,30 @@ using tensor_list = std::vector<Tensor>;
 
 struct Node {
     virtual tensor_list forward(tensor_list inputs) = 0;
-    virtual tensor_list backward(tensor_list inputs) = 0;
-
-    void save_for_backward(const Tensor& variable)
-    {
-        _saved_data.push_back(variable);
-    }
+    virtual tensor_list backward(Tensor& grad) = 0;
 
     void set_edges(tensor_list input_edges)
     {
         _edges = std::move(input_edges);
     }
 
+    tensor_list& edges()
+    {
+        return _edges;
+    }
+
     virtual ~Node() = default;
+
+protected:
+    void save_for_backward(const Tensor& variable)
+    {
+        _saved_data.push_back(variable);
+    }
+
+    tensor_list& saved()
+    {
+        return _saved_data;
+    }
 
 private:
     tensor_list _saved_data;

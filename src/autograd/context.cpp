@@ -1,8 +1,13 @@
 #include "cppgrad/autograd/context.hpp"
 #include "cppgrad/autograd/node.hpp"
+#include "cppgrad/itertools/itertools.hpp"
 #include "cppgrad/tensor/tensor.hpp"
+#include <set>
 
 namespace cppgrad::autograd {
+
+using tensor_ptr_list = std::vector<Tensor*>;
+using tensor_ptr_set = std::set<Tensor*>;
 
 struct AutogradContext : AutogradInterface {
     AutogradContext()
@@ -56,6 +61,79 @@ const Tensor& AutogradContextFactory::empty_tensor()
 {
     static Tensor _empty;
     return _empty;
+}
+
+namespace impl {
+    static void walk(Tensor& node, tensor_ptr_list& tensors, tensor_ptr_set& visited)
+    {
+        visited.emplace(&node);
+
+        for (auto& p : node.grad_fn()->edges()) {
+            if (visited.count(&p) == 0) {
+                walk(p, tensors, visited);
+            }
+        }
+
+        tensors.push_back(&node);
+    }
+
+    static tensor_ptr_list walk(Tensor& root)
+    {
+        tensor_ptr_set visited;
+        tensor_ptr_list tensors;
+
+        walk(root, tensors, visited);
+
+        return std::move(tensors);
+    }
+
+    void backward(Tensor& root)
+    {
+        auto topo = walk(root);
+        auto any_requires = [](auto& edges) {
+            for (auto& i : edges) {
+                if (!i.requires_grad()) {
+                    return false;
+                }
+            }
+
+            return true;
+        };
+
+        // init root grad Tensor
+        root.grad() = Tensor::create_dirty(root.shape(), root.dtype(), root.get_align(), root.device().clone());
+
+        // this is ugliest thing ever; to be changed with autocast fill
+        for_each_type(
+            [&](auto tag) {
+                using Type = decltype(tag);
+                root.fill(Type(1));
+            },
+            root.dtype());
+
+        // uh oh some crazy matches here
+        for (auto& i : itertools::reversed(topo)) {
+            auto& node = *i;
+
+            auto& grad_fn = node.grad_fn();
+
+            if (!any_requires(grad_fn->edges())) {
+                continue;
+            }
+
+            auto grads = grad_fn->backward(node.grad());
+
+            for (auto [n, g] : itertools::combine(grad_fn->edges(), grads)) {
+                if (n.requires_grad() && !g.empty()) {
+                    n.grad() = std::move(g);
+                }
+            }
+
+            // release grad_fn ownership for node
+            grad_fn.reset();
+        }
+    }
+
 }
 
 }

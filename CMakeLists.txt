@@ -32,6 +32,7 @@ file (GLOB
 	include/cppgrad/device/*.hpp
 	include/cppgrad/tensor/*.hpp
 	include/cppgrad/tensor/util/*.hpp
+	include/cppgrad/itertools/*.hpp
 )
 
 set(CPPGRAD_DEVICE_INCLUDES 
