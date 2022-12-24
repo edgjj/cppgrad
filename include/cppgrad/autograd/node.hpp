@@ -63,7 +63,7 @@ namespace autograd {
         static tensor_list apply(tensor_list inputs)
         {
             // check if at least 1 input requires grad; if not - just make pure forward call
-            if (std::find_if(inputs.begin(), inputs.end(), [](auto& t) { return t.requires_grad(); }) == inputs.end()) {
+            if (!ThreadLocalGradState::get() || std::find_if(inputs.begin(), inputs.end(), [](auto& t) { return t.requires_grad(); }) == inputs.end()) {
                 return Fn {}.forward(std::move(inputs));
             }
 
