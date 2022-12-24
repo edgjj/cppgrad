@@ -81,6 +81,18 @@ void CPUExecutor::mul(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
     for_each_type(OpWrapper1D { std::move(fn), dst, lhs, rhs }, dst.dtype());
 }
 
+void CPUExecutor::div(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
+{
+    auto fn = [](auto out, auto p1, auto p2) {
+        async::parallel_for(async::irange(0ull, out.size()),
+            [&](size_t k) {
+                out[k] = p1[k] / p2[k];
+            });
+    };
+
+    for_each_type(OpWrapper1D { std::move(fn), dst, lhs, rhs }, dst.dtype());
+}
+
 void CPUExecutor::pow(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 {
     auto fn = [](auto out, auto p1, auto p2) {

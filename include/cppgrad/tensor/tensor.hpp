@@ -16,8 +16,7 @@
 #include "cppgrad/exceptions/index_error.hpp"
 
 // ops
-#include "cppgrad/tensor/ops/binary_ops.hpp"
-#include "cppgrad/tensor/ops/unary_ops.hpp"
+#include "cppgrad/tensor/ops/op_overloads.hpp"
 
 // autograd
 #include "cppgrad/autograd/context.hpp"

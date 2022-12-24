@@ -15,7 +15,7 @@ namespace autograd {
 
     struct Node {
         virtual tensor_list forward(tensor_list inputs) = 0;
-        virtual tensor_list backward(Tensor& grad) = 0;
+        virtual tensor_list backward(const Tensor& grad) = 0;
 
         void set_edges(tensor_list input_edges)
         {

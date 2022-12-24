@@ -52,6 +52,15 @@ __global__ void mul_kernel(ConstStridedSpan<T> p1, ConstStridedSpan<T> p2, Strid
 }
 
 template <typename T>
+__global__ void div_kernel(ConstStridedSpan<T> p1, ConstStridedSpan<T> p2, StridedSpan<T> out)
+{
+    CPPGRAD_CUDA_1D_LOOP(i, out.size())
+    {
+        out[i] = p1[i] / p2[i];
+    }
+}
+
+template <typename T>
 __global__ void pow_kernel(ConstStridedSpan<T> p1, ConstStridedSpan<T> p2, StridedSpan<T> out)
 {
     CPPGRAD_CUDA_1D_LOOP(i, out.size())

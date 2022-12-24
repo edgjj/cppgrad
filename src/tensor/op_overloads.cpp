@@ -1,6 +1,7 @@
 #include "cppgrad/exceptions/generic_error.hpp"
 #include "cppgrad/exceptions/type_error.hpp"
-#include "cppgrad/tensor/tensor.hpp"
+#include "cppgrad/tensor/ops/grad_ops.hpp"
+#include "cppgrad/tensor/tensor.hpp" // tensor.hpp includes op_overloads.hpp
 
 namespace cppgrad {
 
@@ -34,28 +35,80 @@ namespace {
     }
 }
 
+Tensor& operator+=(Tensor& lhs, const Tensor& rhs)
+{
+    check_op_generic(lhs, rhs);
+    check_op_elementwise(lhs, rhs);
+
+    auto lhs_out = lhs.requires_grad() ? lhs.clone() : lhs;
+    lhs = AddOp::apply({ lhs_out, rhs })[0];
+
+    return lhs;
+}
+
+Tensor& operator-=(Tensor& lhs, const Tensor& rhs)
+{
+    check_op_generic(lhs, rhs);
+    check_op_elementwise(lhs, rhs);
+
+    auto lhs_out = lhs.requires_grad() ? lhs.clone() : lhs;
+    lhs = SubOp::apply({ lhs_out, rhs })[0];
+
+    return lhs;
+}
+
+Tensor& operator*=(Tensor& lhs, const Tensor& rhs)
+{
+    check_op_generic(lhs, rhs);
+    check_op_elementwise(lhs, rhs);
+
+    auto lhs_out = lhs.requires_grad() ? lhs.clone() : lhs;
+    lhs = MultiplyOp::apply({ lhs_out, rhs })[0];
+
+    return lhs;
+}
+
+Tensor& operator/=(Tensor& lhs, const Tensor& rhs)
+{
+    check_op_generic(lhs, rhs);
+    check_op_elementwise(lhs, rhs);
+
+    auto lhs_out = lhs.requires_grad() ? lhs.clone() : lhs;
+    lhs = DivisionOp::apply({ lhs_out, rhs })[0];
+
+    return lhs;
+}
+
 Tensor operator+(const Tensor& lhs, const Tensor& rhs)
 {
-    auto out = lhs.clone();
-    out += rhs;
+    check_op_generic(lhs, rhs);
+    check_op_elementwise(lhs, rhs);
 
-    return out;
+    return AddOp::apply({ lhs, rhs })[0];
 }
 
 Tensor operator-(const Tensor& lhs, const Tensor& rhs)
 {
-    auto out = lhs.clone();
-    out -= rhs;
+    check_op_generic(lhs, rhs);
+    check_op_elementwise(lhs, rhs);
 
-    return out;
+    return SubOp::apply({ lhs, rhs })[0];
 }
 
 Tensor operator*(const Tensor& lhs, const Tensor& rhs)
 {
-    auto out = lhs.clone();
-    out *= rhs;
+    check_op_generic(lhs, rhs);
+    check_op_elementwise(lhs, rhs);
 
-    return out;
+    return MultiplyOp::apply({ lhs, rhs })[0];
+}
+
+Tensor operator/(const Tensor& lhs, const Tensor& rhs)
+{
+    check_op_generic(lhs, rhs);
+    check_op_elementwise(lhs, rhs);
+
+    return DivisionOp::apply({ lhs, rhs })[0];
 }
 
 Tensor pow(const Tensor& lhs, const Tensor& rhs)

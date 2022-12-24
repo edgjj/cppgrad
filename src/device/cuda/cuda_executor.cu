@@ -86,6 +86,16 @@ void CUDAExecutor::mul(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
     for_each_type(OpWrapper1D { std::move(fn), dst, lhs, rhs }, dst.dtype());
 }
 
+void CUDAExecutor::div(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
+{
+    auto fn = [](auto out, auto p1, auto p2) {
+        CPPGRAD_CUDA_LAUNCH(div_kernel, out.size())
+        (p1, p2, out);
+    };
+
+    for_each_type(OpWrapper1D { std::move(fn), dst, lhs, rhs }, dst.dtype());
+}
+
 void CUDAExecutor::pow(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 {
     auto fn = [](auto out, auto p1, auto p2) {

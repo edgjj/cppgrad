@@ -21,6 +21,8 @@ struct CUDAExecutor : Executor {
     void sum(const Tensor& lhs, const Tensor& rhs, Tensor& dst) override;
     void sub(const Tensor& lhs, const Tensor& rhs, Tensor& dst) override;
     void mul(const Tensor& lhs, const Tensor& rhs, Tensor& dst) override;
+    void div(const Tensor& lhs, const Tensor& rhs, Tensor& dst) override;
+
     void pow(const Tensor& lhs, const Tensor& rhs, Tensor& dst) override;
     void dot(const Tensor& lhs, const Tensor& rhs, Tensor& dst) override;
     void matmul(const Tensor& lhs, const Tensor& rhs, Tensor& dst) override;

@@ -5,6 +5,20 @@
 
 using namespace cppgrad;
 
+/*
+    This is an example of custom ops, suitable for Autograd engine.
+
+    For simplicity, these ops clone their input, but
+    real code may have different behavior for grad/non-grad inputs.
+
+    Typical Op implementation should be splitted into cpp/hpp,
+    where cpp also has Tensor include.
+
+    Supplying Op type as template parameter when inheriting CustomNode
+    is required for apply to work.
+
+*/
+
 struct AddOp : autograd::CustomNode<AddOp> {
     tensor_list forward(tensor_list inputs) override
     {
@@ -17,9 +31,9 @@ struct AddOp : autograd::CustomNode<AddOp> {
         return { out };
     }
 
-    tensor_list backward(Tensor& prev_grad) override
+    tensor_list backward(const Tensor& prev_grad) override
     {
-        auto grad = prev_grad.clone(); // need to solve this issue too
+        auto grad = prev_grad.clone();
         return { grad, grad };
     }
 };
@@ -38,7 +52,7 @@ struct MulOp : autograd::CustomNode<MulOp> {
         return { out };
     }
 
-    tensor_list backward(Tensor& prev_grad) override
+    tensor_list backward(const Tensor& prev_grad) override
     {
         auto &x = saved()[0],
              &y = saved()[1];
