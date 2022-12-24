@@ -40,6 +40,36 @@ struct DotProductOp : autograd::CustomNode<DotProductOp> {
     tensor_list backward(const Tensor& prev_grad) override;
 };
 
+struct LogOp : autograd::CustomNode<LogOp> {
+    tensor_list forward(tensor_list inputs) override;
+    tensor_list backward(const Tensor& prev_grad) override;
+};
+
+struct ExpOp : autograd::CustomNode<ExpOp> {
+    tensor_list forward(tensor_list inputs) override;
+    tensor_list backward(const Tensor& prev_grad) override;
+};
+
+struct ReluOp : autograd::CustomNode<ReluOp> {
+    tensor_list forward(tensor_list inputs) override;
+    tensor_list backward(const Tensor& prev_grad) override;
+};
+
+struct TanhOp : autograd::CustomNode<TanhOp> {
+    tensor_list forward(tensor_list inputs) override;
+    tensor_list backward(const Tensor& prev_grad) override;
+};
+
+struct SignOp : autograd::CustomNode<SignOp> {
+    tensor_list forward(tensor_list inputs) override;
+    tensor_list backward(const Tensor& prev_grad) override;
+};
+
+struct NegOp : autograd::CustomNode<NegOp> {
+    tensor_list forward(tensor_list inputs) override;
+    tensor_list backward(const Tensor& prev_grad) override;
+};
+
 }
 
 #endif

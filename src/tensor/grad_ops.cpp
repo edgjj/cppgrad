@@ -16,8 +16,11 @@ tensor_list AddOp::forward(tensor_list inputs)
 
 tensor_list AddOp::backward(const Tensor& prev_grad)
 {
-    auto grad = prev_grad.clone();
-    return { grad, grad };
+    auto grad_x = prev_grad.clone(),
+         grad_y = prev_grad.clone();
+
+    grad_y.executor().neg(grad_y, grad_y); // negate Y grad
+    return { grad_x, grad_y };
 }
 
 // SubOp;
@@ -59,8 +62,8 @@ tensor_list MultiplyOp::backward(const Tensor& prev_grad)
     auto grad_x = x.clone(),
          grad_y = y.clone();
 
-    grad_x.executor().mul(y, prev_grad, grad_x);
-    grad_y.executor().mul(x, prev_grad, grad_y);
+    grad_x.executor().mul(prev_grad, y, grad_x);
+    grad_y.executor().mul(prev_grad, x, grad_y);
 
     return { grad_x, grad_y };
 }
@@ -86,8 +89,8 @@ tensor_list DivisionOp::backward(const Tensor& prev_grad)
          grad_y = y.clone();
 
     // (y*grad - x * grad) / y^2
-    grad_x.executor().mul(y, prev_grad, grad_x);
-    grad_y.executor().mul(x, prev_grad, grad_y);
+    grad_x.executor().mul(prev_grad, y, grad_x);
+    grad_y.executor().mul(prev_grad, x, grad_y);
 
     // pow 2
     y.executor().mul(y, y, y);
@@ -188,6 +191,128 @@ tensor_list DotProductOp::backward(const Tensor& prev_grad)
 
     return { grad_x, grad_y };
     return { grad_x, grad_y };
+}
+
+// LogOp
+tensor_list LogOp::forward(tensor_list inputs)
+{
+    auto& x = inputs[0];
+
+    save_for_backward(x);
+    x.executor().log(x, x);
+
+    return { x };
+}
+
+tensor_list LogOp::backward(const Tensor& prev_grad)
+{
+    auto& x = saved()[0];
+
+    auto grad = prev_grad.clone();
+    grad.executor().div(grad, x, grad); // d * 1 / x
+
+    return { grad };
+}
+
+// ExpOp
+tensor_list ExpOp::forward(tensor_list inputs)
+{
+    auto& x = inputs[0];
+
+    x.executor().exp(x, x);
+    save_for_backward(x);
+
+    return { x };
+}
+
+tensor_list ExpOp::backward(const Tensor& prev_grad)
+{
+    auto& out = saved()[0];
+    auto grad = prev_grad.clone();
+
+    grad.executor().mul(grad, out, grad); // d * e ^ x
+
+    return { grad };
+}
+
+// ReluOp
+tensor_list ReluOp::forward(tensor_list inputs)
+{
+    auto& x = inputs[0];
+
+    x.executor().relu(x, x);
+    save_for_backward(x);
+
+    return { x };
+}
+
+tensor_list ReluOp::backward(const Tensor& prev_grad)
+{
+    auto& out = saved()[0];
+    auto grad = prev_grad.clone();
+
+    out.executor().sign(out, out);
+    grad.executor().mul(out, grad, grad);
+
+    return { grad }; // (x > 0) * prev_grad -> sign(out) * prev_grad
+}
+
+// TanhOp
+tensor_list TanhOp::forward(tensor_list inputs)
+{
+    auto& x = inputs[0];
+
+    x.executor().tanh(x, x);
+    save_for_backward(x);
+
+    return { x };
+}
+
+tensor_list TanhOp::backward(const Tensor& prev_grad)
+{
+    auto& x = saved()[0];
+    auto grad = prev_grad.clone(); // 1 - tanh(x) * tanh(x)
+
+    x.executor().mul(x, x, x); // tanh^2(x)
+    x.executor().mul(x, grad, x); // tanh^2(x) * g
+
+    grad.executor().sub(grad, x, grad); // g - g * tanh^2(x)
+
+    return { grad };
+}
+
+// SignOp
+tensor_list NegOp::forward(tensor_list inputs)
+{
+    auto& x = inputs[0];
+    x.executor().sign(x, x);
+
+    return { x };
+}
+
+tensor_list NegOp::backward(const Tensor& prev_grad)
+{
+    auto grad = prev_grad.clone();
+    grad.executor().sub(prev_grad, prev_grad, grad); // zero grad;
+
+    return { grad };
+}
+
+// NegOp
+tensor_list NegOp::forward(tensor_list inputs)
+{
+    auto& x = inputs[0];
+    x.executor().neg(x, x);
+
+    return { x };
+}
+
+tensor_list NegOp::backward(const Tensor& prev_grad)
+{
+    auto grad = prev_grad.clone();
+    grad.executor().neg(prev_grad, grad); // negate grad
+
+    return { grad };
 }
 
 }

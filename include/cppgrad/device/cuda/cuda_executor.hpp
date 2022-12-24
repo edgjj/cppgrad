@@ -32,6 +32,9 @@ struct CUDAExecutor : Executor {
 
     void relu(const Tensor& lhs, Tensor& dst) override;
     void tanh(const Tensor& lhs, Tensor& dst) override;
+    void sign(const Tensor& lhs, Tensor& dst) override;
+    void neg(const Tensor& lhs, Tensor& dst) override;
+
     void cmp(const Tensor& lhs, const Tensor& rhs, Tensor& dst, CompareType cmp_type) override;
 
 private:

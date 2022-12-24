@@ -142,4 +142,38 @@ Tensor mm(const Tensor& lhs, const Tensor& rhs)
     }
 }
 
+// we need to solve that const incorrectness thing;
+// shallow copying const tensor allows to modifying parent tensor contents
+// but i think it's not possible without killing whole shallow copy thing
+
+Tensor log(Tensor& lhs)
+{
+    return LogOp::apply({ lhs.requires_grad() ? lhs.clone() : lhs })[0]; // clone if requires grad; ugly boilerplate
+}
+
+Tensor exp(Tensor& lhs)
+{
+    return ExpOp::apply({ lhs.requires_grad() ? lhs.clone() : lhs })[0];
+}
+
+Tensor relu(Tensor& lhs)
+{
+    return ReluOp::apply({ lhs.requires_grad() ? lhs.clone() : lhs })[0];
+}
+
+Tensor tanh(Tensor& lhs)
+{
+    return TanhOp::apply({ lhs.requires_grad() ? lhs.clone() : lhs })[0];
+}
+
+Tensor sign(Tensor& lhs)
+{
+    return SignOp::apply({ lhs.requires_grad() ? lhs.clone() : lhs })[0];
+}
+
+Tensor neg(Tensor& lhs)
+{
+    return NegOp::apply({ lhs.requires_grad() ? lhs.clone() : lhs })[0];
+}
+
 }

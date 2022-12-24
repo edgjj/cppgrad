@@ -224,6 +224,32 @@ __global__ void tanh_kernel(ConstStridedSpan<T> p1, StridedSpan<T> out)
     }
 }
 
+template <typename T>
+__global__ void sign_kernel(ConstStridedSpan<T> p1, StridedSpan<T> out)
+{
+    CPPGRAD_CUDA_1D_LOOP(i, out.size())
+    {
+        if constexpr (!std::is_signed_v<T>) {
+            out[i] = T(0) < p1[i];
+        } else {
+            out[i] = (T(0) < p1[i]) - (p1[i] < T(0));
+        }
+    }
+}
+
+template <typename T>
+__global__ void neg_kernel(ConstStridedSpan<T> p1, StridedSpan<T> out)
+{
+    CPPGRAD_CUDA_1D_LOOP(i, out.size())
+    {
+        if constexpr (!std::is_signed_v<T>) {
+            out[i] = p1[i]; // no op on unsigned types
+        } else {
+            out[i] = -p1[i];
+        }
+    }
+}
+
 }
 
 #endif

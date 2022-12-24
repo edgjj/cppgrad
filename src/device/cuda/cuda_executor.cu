@@ -172,6 +172,26 @@ void CUDAExecutor::tanh(const Tensor& lhs, Tensor& dst)
     for_each_type(OpWrapper1D { std::move(fn), dst, lhs, lhs }, dst.dtype());
 }
 
+void CUDAExecutor::sign(const Tensor& lhs, Tensor& dst)
+{
+    auto fn = [](auto out, auto p1, auto p2) {
+        CPPGRAD_CUDA_LAUNCH(sign_kernel, out.size())
+        (p1, out);
+    };
+
+    for_each_type(OpWrapper1D { std::move(fn), dst, lhs, lhs }, dst.dtype());
+}
+
+void CUDAExecutor::neg(const Tensor& lhs, Tensor& dst)
+{
+    auto fn = [](auto out, auto p1, auto p2) {
+        CPPGRAD_CUDA_LAUNCH(neg_kernel, out.size())
+        (p1, out);
+    };
+
+    for_each_type(OpWrapper1D { std::move(fn), dst, lhs, lhs }, dst.dtype());
+}
+
 void CUDAExecutor::cmp(const Tensor& lhs, const Tensor& rhs, Tensor& dst, CompareType cmp_type)
 {
 }

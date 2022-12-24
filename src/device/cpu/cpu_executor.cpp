@@ -197,6 +197,42 @@ void CPUExecutor::tanh(const Tensor& lhs, Tensor& dst)
     for_each_type(OpWrapper1D { std::move(fn), dst, lhs, lhs }, dst.dtype());
 }
 
+void CPUExecutor::sign(const Tensor& lhs, Tensor& dst)
+{
+    auto fn = [](auto out, auto p1, auto p2) {
+        using Type = typename decltype(out)::Type;
+
+        async::parallel_for(async::irange(0ull, out.size()),
+            [&](size_t k) {
+                if constexpr (!std::is_signed_v<Type>) {
+                    out[k] = Type(0) < p1[k];
+                } else {
+                    out[k] = (Type(0) < p1[k]) - (p1[k] < Type(0));
+                }
+            });
+    };
+
+    for_each_type(OpWrapper1D { std::move(fn), dst, lhs, lhs }, dst.dtype());
+}
+
+void CPUExecutor::neg(const Tensor& lhs, Tensor& dst)
+{
+    auto fn = [](auto out, auto p1, auto p2) {
+        using Type = typename decltype(out)::Type;
+
+        async::parallel_for(async::irange(0ull, out.size()),
+            [&](size_t k) {
+                if constexpr (!std::is_signed_v<Type>) {
+                    out[k] = p1[k];
+                } else {
+                    out[k] = -p1[k];
+                }
+            });
+    };
+
+    for_each_type(OpWrapper1D { std::move(fn), dst, lhs, lhs }, dst.dtype());
+}
+
 void CPUExecutor::cmp(const Tensor& lhs, const Tensor& rhs, Tensor& dst, CompareType cmp_type)
 {
 }
