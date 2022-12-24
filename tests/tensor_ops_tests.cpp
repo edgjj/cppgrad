@@ -4,6 +4,8 @@
 #include <cppgrad/exceptions/type_error.hpp>
 #include <gtest/gtest.h>
 
+#include <cmath>
+
 using namespace cppgrad;
 
 TEST(TensorOpsTests, SumTest)

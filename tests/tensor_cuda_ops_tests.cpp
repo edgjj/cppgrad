@@ -4,6 +4,7 @@
 #include <cppgrad/exceptions/type_error.hpp>
 #include <gtest/gtest.h>
 
+#include <cmath>
 #include <random>
 
 using namespace cppgrad;
