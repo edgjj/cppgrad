@@ -1,4 +1,5 @@
 #include "cppgrad/autograd/context.hpp"
+#include "cppgrad/autograd/grad_mode.hpp"
 #include "cppgrad/autograd/node.hpp"
 #include "cppgrad/itertools/itertools.hpp"
 #include "cppgrad/tensor/tensor.hpp"
@@ -10,8 +11,8 @@ namespace cppgrad::autograd {
 struct AutogradContext : AutogradInterface {
     AutogradContext()
     {
-        // we can access some thread-local storage there to automatically set _requires_grad
-        // NoGradGuard moment
+        // acquire thread-local grad mode
+        _requires_grad = ThreadLocalGradState::get();
     }
 
     Tensor& grad() override
@@ -41,7 +42,7 @@ struct AutogradContext : AutogradInterface {
 
     bool requires_grad() const override
     {
-        return _requires_grad;
+        return _requires_grad || _grad_fn;
     }
 
 private:
@@ -49,6 +50,9 @@ private:
     Tensor _grad;
     std::shared_ptr<Node> _grad_fn; // can be shared between multiple Tensors
 };
+
+
+namespace impl {
 
 std::unique_ptr<AutogradInterface> AutogradContextFactory::make()
 {
@@ -60,8 +64,6 @@ const Tensor& AutogradContextFactory::empty_tensor()
     static Tensor _empty;
     return _empty;
 }
-
-namespace impl {
 
     using tensor_list = std::vector<Tensor>;
     using tensor_hash_set = std::unordered_set<Tensor>;
@@ -96,15 +98,20 @@ namespace impl {
 
 void backward(Tensor& root)
 {
+    // no op
+    if (!root.requires_grad()) {
+        return;
+    }
+
     auto topo = impl::walk(root);
     auto any_requires_grad = [](auto& edges) {
         for (auto& i : edges) {
-            if (!i.requires_grad()) {
-                return false;
+            if (i.requires_grad()) {
+                return true;
             }
         }
 
-        return true;
+        return false;
     };
 
     // init root grad Tensor

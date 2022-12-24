@@ -11,9 +11,10 @@ struct AddOp : autograd::CustomNode<AddOp> {
         auto &x = inputs[0],
              &y = inputs[1];
 
-        x.executor().sum(x, y, x);
+        auto out = x.clone();
+        x.executor().sum(x, y, out);
 
-        return { x };
+        return { out };
     }
 
     tensor_list backward(Tensor& prev_grad) override
@@ -29,10 +30,12 @@ struct MulOp : autograd::CustomNode<MulOp> {
         auto &x = inputs[0],
              &y = inputs[1];
 
-        save_for_backward(x, y);
-        x.executor().mul(x, y, x);
+        auto out = x.clone();
 
-        return { x };
+        save_for_backward(x, y);
+        x.executor().mul(x, y, out);
+
+        return { out };
     }
 
     tensor_list backward(Tensor& prev_grad) override
@@ -52,6 +55,8 @@ struct MulOp : autograd::CustomNode<MulOp> {
 
 int main()
 {
+    autograd::ForceGradGuard guard;
+
     auto t1 = Tensor(2.0);
     auto t2 = Tensor(4.0);
 

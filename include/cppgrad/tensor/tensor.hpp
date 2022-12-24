@@ -21,6 +21,7 @@
 
 // autograd
 #include "cppgrad/autograd/context.hpp"
+#include "cppgrad/autograd/grad_mode.hpp"
 
 namespace cppgrad {
 

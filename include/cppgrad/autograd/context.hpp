@@ -52,10 +52,14 @@ struct AutogradInterface {
     virtual ~AutogradInterface() = default;
 };
 
-struct AutogradContextFactory {
-    static std::unique_ptr<AutogradInterface> make();
-    static const Tensor& empty_tensor();
-};
+namespace impl {
+
+    struct AutogradContextFactory {
+        static std::unique_ptr<AutogradInterface> make();
+        static const Tensor& empty_tensor();
+    };
+
+}
 
 /**
  * @brief Backward passes starting from root Tensor

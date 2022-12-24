@@ -335,7 +335,7 @@ size_t Tensor::get_align() const
 Tensor& Tensor::grad()
 {
     if (!_storage->_autograd_context) {
-        _storage->_autograd_context = autograd::AutogradContextFactory::make();
+        _storage->_autograd_context = autograd::impl::AutogradContextFactory::make();
     }
 
     return _storage->_autograd_context->grad();
@@ -344,7 +344,7 @@ Tensor& Tensor::grad()
 const Tensor& Tensor::grad() const
 {
     if (!_storage->_autograd_context) {
-        return autograd::AutogradContextFactory::empty_tensor();
+        return autograd::impl::AutogradContextFactory::empty_tensor();
     }
 
     return _storage->_autograd_context->grad();
@@ -353,7 +353,7 @@ const Tensor& Tensor::grad() const
 void Tensor::set_grad_fn(std::shared_ptr<autograd::Node> new_grad_fn)
 {
     if (!_storage->_autograd_context) {
-        _storage->_autograd_context = autograd::AutogradContextFactory::make();
+        _storage->_autograd_context = autograd::impl::AutogradContextFactory::make();
     }
 
     _storage->_autograd_context->set_grad_fn(std::move(new_grad_fn));
@@ -362,7 +362,7 @@ void Tensor::set_grad_fn(std::shared_ptr<autograd::Node> new_grad_fn)
 std::shared_ptr<autograd::Node>& Tensor::grad_fn()
 {
     if (!_storage->_autograd_context) {
-        _storage->_autograd_context = autograd::AutogradContextFactory::make();
+        _storage->_autograd_context = autograd::impl::AutogradContextFactory::make();
     }
 
     return _storage->_autograd_context->grad_fn();
@@ -371,7 +371,7 @@ std::shared_ptr<autograd::Node>& Tensor::grad_fn()
 void Tensor::set_requires_grad(bool new_requires_grad)
 {
     if (!_storage->_autograd_context) {
-        _storage->_autograd_context = autograd::AutogradContextFactory::make();
+        _storage->_autograd_context = autograd::impl::AutogradContextFactory::make();
     }
 
     _storage->_autograd_context->set_requires_grad(new_requires_grad);
@@ -418,6 +418,11 @@ Tensor::Tensor(std::byte* chunk,
         std::move(strides),
         device,
         type);
+
+    // init if forced grad
+    if (autograd::ThreadLocalGradState::get()) {
+        _storage->_autograd_context = autograd::impl::AutogradContextFactory::make();
+    }
 }
 
 std::shared_ptr<impl::TensorData>& Tensor::base_storage()
