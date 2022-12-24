@@ -9,7 +9,7 @@ struct ThreadLocalGradState {
         state() = new_state;
     }
 
-    static bool get()
+    static inline bool get()
     {
         return state();
     }

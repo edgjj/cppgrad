@@ -33,7 +33,7 @@ struct AddOp : autograd::CustomNode<AddOp> {
 
     tensor_list backward(const Tensor& prev_grad) override
     {
-        auto grad = prev_grad.clone();
+        auto grad = prev_grad.clone(); // need to solve this issue too
         return { grad, grad };
     }
 };

@@ -27,6 +27,8 @@ struct AutogradContext : AutogradInterface {
 
     void set_grad_fn(std::shared_ptr<Node> new_grad_fn) override
     {
+        // this little boy cuts perf a lot; seen in matmul_bench, drop is around 50%
+        // TODO: fix that
         _grad_fn = std::move(new_grad_fn);
     }
 

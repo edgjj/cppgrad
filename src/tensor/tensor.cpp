@@ -266,7 +266,7 @@ Tensor Tensor::cpu()
     }
 
     auto new_tensor = create_dirty(shape(), dtype(), (size_t)_storage->_alignment, new CPU());
-    executor().copy(new_tensor.data(), data(), nbytes(), impl::DeviceToHost);
+    executor().copy(data(), new_tensor.data(), new_tensor.nbytes(), impl::DeviceToHost); // use CUDA executor
 
     return new_tensor;
 }

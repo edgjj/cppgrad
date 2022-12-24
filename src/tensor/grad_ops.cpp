@@ -163,7 +163,6 @@ tensor_list DotProductOp::forward(tensor_list inputs)
          &x = inputs[1],
          &y = inputs[2];
 
-    // we need to multiply there by scalar
     out.executor().dot(x, y, out);
 
     return { out };
