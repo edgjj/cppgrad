@@ -282,7 +282,7 @@ tensor_list TanhOp::backward(const Tensor& prev_grad)
 }
 
 // SignOp
-tensor_list NegOp::forward(tensor_list inputs)
+tensor_list SignOp::forward(tensor_list inputs)
 {
     auto& x = inputs[0];
     x.executor().sign(x, x);
@@ -290,7 +290,7 @@ tensor_list NegOp::forward(tensor_list inputs)
     return { x };
 }
 
-tensor_list NegOp::backward(const Tensor& prev_grad)
+tensor_list SignOp::backward(const Tensor& prev_grad)
 {
     auto grad = prev_grad.clone();
     grad.executor().sub(prev_grad, prev_grad, grad); // zero grad;
