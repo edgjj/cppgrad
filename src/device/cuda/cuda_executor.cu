@@ -132,12 +132,44 @@ void CUDAExecutor::matmul(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
     for_each_type(OpWrapper2D { std::move(fn), dst, lhs, rhs }, dst.dtype());
 }
 
+void CUDAExecutor::log(const Tensor& lhs, Tensor& dst)
+{
+    auto fn = [](auto out, auto p1, auto p2) {
+        CPPGRAD_CUDA_LAUNCH(log_kernel, out.size())
+        (p1, out);
+    };
+
+    for_each_type(OpWrapper1D { std::move(fn), dst, lhs, lhs }, dst.dtype());
+}
+
+void CUDAExecutor::exp(const Tensor& lhs, Tensor& dst)
+{
+    auto fn = [](auto out, auto p1, auto p2) {
+        CPPGRAD_CUDA_LAUNCH(exp_kernel, out.size())
+        (p1, out);
+    };
+
+    for_each_type(OpWrapper1D { std::move(fn), dst, lhs, lhs }, dst.dtype());
+}
+
 void CUDAExecutor::relu(const Tensor& lhs, Tensor& dst)
 {
+    auto fn = [](auto out, auto p1, auto p2) {
+        CPPGRAD_CUDA_LAUNCH(relu_kernel, out.size())
+        (p1, out);
+    };
+
+    for_each_type(OpWrapper1D { std::move(fn), dst, lhs, lhs }, dst.dtype());
 }
 
 void CUDAExecutor::tanh(const Tensor& lhs, Tensor& dst)
 {
+    auto fn = [](auto out, auto p1, auto p2) {
+        CPPGRAD_CUDA_LAUNCH(tanh_kernel, out.size())
+        (p1, out);
+    };
+
+    for_each_type(OpWrapper1D { std::move(fn), dst, lhs, lhs }, dst.dtype());
 }
 
 void CUDAExecutor::cmp(const Tensor& lhs, const Tensor& rhs, Tensor& dst, CompareType cmp_type)

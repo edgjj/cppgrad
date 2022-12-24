@@ -143,6 +143,34 @@ void CPUExecutor::matmul(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
     for_each_type(OpWrapper2D { std::move(fn), dst, lhs, rhs }, dst.dtype());
 }
 
+void CPUExecutor::log(const Tensor& lhs, Tensor& dst)
+{
+    auto fn = [](auto out, auto p1, auto p2) {
+        using Type = typename decltype(out)::Type;
+
+        async::parallel_for(async::irange(0ull, out.size()),
+            [&](size_t k) {
+                out[k] = std::log(p1[k]);
+            });
+    };
+
+    for_each_type(OpWrapper1D { std::move(fn), dst, lhs, lhs }, dst.dtype());
+}
+
+void CPUExecutor::exp(const Tensor& lhs, Tensor& dst)
+{
+    auto fn = [](auto out, auto p1, auto p2) {
+        using Type = typename decltype(out)::Type;
+
+        async::parallel_for(async::irange(0ull, out.size()),
+            [&](size_t k) {
+                out[k] = std::exp(p1[k]);
+            });
+    };
+
+    for_each_type(OpWrapper1D { std::move(fn), dst, lhs, lhs }, dst.dtype());
+}
+
 void CPUExecutor::relu(const Tensor& lhs, Tensor& dst)
 {
     auto fn = [](auto out, auto p1, auto p2) {

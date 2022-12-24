@@ -3,6 +3,7 @@
 
 #include "cppgrad/device/cuda/cuda_defs.hpp"
 #include "cppgrad/tensor/util/strided_span.hpp"
+#include <cuda.h>
 
 namespace cppgrad::impl {
 
@@ -167,6 +168,59 @@ __global__ void matmul_kernel(ConstStridedSpan2D<T> p1, ConstStridedSpan2D<T> p2
 
     if (row < out.size(0) && col < out.size(1)) {
         out(row, col) = temp;
+    }
+}
+
+// lhs to out kernels
+
+template <typename T>
+__global__ void log_kernel(ConstStridedSpan<T> p1, StridedSpan<T> out)
+{
+    CPPGRAD_CUDA_1D_LOOP(i, out.size())
+    {
+        // escape to global namespace to avoid cppgrad::pow
+        if constexpr (std::is_same_v<double, T>) {
+            out[i] = ::log(p1[i]);
+        } else {
+            out[i] = ::logf(p1[i]);
+        }
+    }
+}
+
+template <typename T>
+__global__ void exp_kernel(ConstStridedSpan<T> p1, StridedSpan<T> out)
+{
+    CPPGRAD_CUDA_1D_LOOP(i, out.size())
+    {
+        // escape to global namespace to avoid cppgrad::pow
+        if constexpr (std::is_same_v<double, T>) {
+            out[i] = ::exp(p1[i]);
+        } else {
+            out[i] = ::expf(p1[i]);
+        }
+    }
+}
+
+template <typename T>
+__global__ void relu_kernel(ConstStridedSpan<T> p1, StridedSpan<T> out) // can be synthesized from max/min
+{
+    CPPGRAD_CUDA_1D_LOOP(i, out.size())
+    {
+        // escape to global namespace to avoid cppgrad::pow
+        out[i] = ::max(T(0), (p1[i]));
+    }
+}
+
+template <typename T>
+__global__ void tanh_kernel(ConstStridedSpan<T> p1, StridedSpan<T> out)
+{
+    CPPGRAD_CUDA_1D_LOOP(i, out.size())
+    {
+        if constexpr (std::is_same_v<double, T>) {
+            out[i] = ::tanh(p1[i]);
+        } else {
+            out[i] = ::tanhf(p1[i]);
+        }
     }
 }
 

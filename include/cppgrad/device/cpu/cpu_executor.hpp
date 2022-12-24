@@ -22,6 +22,10 @@ struct CPUExecutor : Executor {
     void pow(const Tensor& lhs, const Tensor& rhs, Tensor& dst) override;
     void dot(const Tensor& lhs, const Tensor& rhs, Tensor& dst) override;
     void matmul(const Tensor& lhs, const Tensor& rhs, Tensor& dst) override;
+
+    void log(const Tensor& lhs, Tensor& dst) override;
+    void exp(const Tensor& lhs, Tensor& dst) override;
+
     void relu(const Tensor& lhs, Tensor& dst) override;
     void tanh(const Tensor& lhs, Tensor& dst) override;
     void cmp(const Tensor& lhs, const Tensor& rhs, Tensor& dst, CompareType cmp_type) override;

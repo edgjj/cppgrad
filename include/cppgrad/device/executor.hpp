@@ -63,6 +63,10 @@ struct Executor {
     virtual void pow(const Tensor& lhs, const Tensor& rhs, Tensor& dst) = 0;
     virtual void matmul(const Tensor& lhs, const Tensor& rhs, Tensor& dst) = 0;
     virtual void dot(const Tensor& lhs, const Tensor& rhs, Tensor& dst) = 0;
+
+    virtual void log(const Tensor& lhs, Tensor& dst) = 0;
+    virtual void exp(const Tensor& lhs, Tensor& dst) = 0;
+
     virtual void relu(const Tensor& lhs, Tensor& dst) = 0;
     virtual void tanh(const Tensor& lhs, Tensor& dst) = 0;
     virtual void cmp(const Tensor& lhs, const Tensor& rhs, Tensor& dst, CompareType cmp_type) = 0;

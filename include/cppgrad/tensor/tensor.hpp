@@ -146,23 +146,7 @@ public:
     static Tensor create_dirty(std::vector<size_t> shape,
         DType type,
         size_t alignment,
-        Device* device)
-    {
-        auto type_size = dtype_size(type);
-
-        size_t total_elements = std::reduce(shape.begin(), shape.end(), size_t(1), std::multiplies<size_t>());
-        auto strides = impl::make_strides(shape, type_size);
-
-        std::align_val_t align { alignment };
-        auto* chunk = device->allocate(total_elements * type_size, align);
-
-        return Tensor(chunk,
-            std::move(shape),
-            std::move(strides),
-            align,
-            device,
-            type);
-    }
+        Device* device);
 
     // default constructors
     Tensor(const Tensor&) = default;
@@ -352,6 +336,16 @@ public:
      * @return Tensor
      */
     Tensor contiguous() const;
+
+    /**
+     * @brief Returns shallow copy of Tensor, which fakes shape, and has infinite length.
+     * Basically, a Tensor with 0 stride.
+     *
+     * Only works with single-element Tensors.
+     *
+     * @return Tensor
+     */
+    Tensor loop(const std::vector<size_t>& fake_shape) const;
 
     /**
      * @brief Determines if Tensor is view onto other Tensor

@@ -119,12 +119,17 @@ tensor_list PowOp::backward(const Tensor& prev_grad)
          &y = saved()[1],
          &out = saved()[2];
 
-    auto grad_x = x.clone(),
-         grad_y = y.clone();
+    auto grad_x = out.clone(),
+         grad_y = out.clone();
 
-    // other->val * pow(self->val, other->val - 1) * out->grad;
-    // --> grad * (y * pow(x, y) / x)
-    // grad.executor().pow()
+    grad_x.executor().mul(prev_grad, grad_x, grad_x); // out->grad * pow(self->val, other->val)
+    y.executor().div(y, x, y); // other->val = other->val / self->val
+    // out->grad * other->val * pow(self->val, other->val) / self->val -> out->grad * other->val * pow(self->val, other->val - 1)
+    grad_x.executor().mul(grad_x, y, grad_x);
+
+    grad_y.executor().mul(prev_grad, grad_y, grad_y); // out->grad * pow(self->val, other->val)
+    x.executor().log(x, x); // x = ln(x)
+    grad_y.executor().mul(x, grad_y, grad_y); // out->grad * pow(self->val, other->val) * ln(x)
 
     return { grad_x, grad_y };
 }
@@ -164,6 +169,7 @@ tensor_list DotProductOp::forward(tensor_list inputs)
          &y = inputs[2];
 
     out.executor().dot(x, y, out);
+    save_for_backward(x, y);
 
     return { out };
 }
@@ -176,9 +182,12 @@ tensor_list DotProductOp::backward(const Tensor& prev_grad)
     auto grad_x = x.clone(),
          grad_y = y.clone();
 
-    return { grad_x, grad_y };
+    // using loop() fakes out Tensor length, allowing iteration point to same mem location
+    grad_x.executor().mul(y, prev_grad.loop(y.shape()), grad_x);
+    grad_y.executor().mul(x, prev_grad.loop(y.shape()), grad_y);
 
-    // we need to multiply there by scalar
+    return { grad_x, grad_y };
+    return { grad_x, grad_y };
 }
 
 }
