@@ -1,7 +1,9 @@
 #ifndef CPPGRAD_AUTOGRAD_NODE_HPP
 #define CPPGRAD_AUTOGRAD_NODE_HPP
 
+#include "cppgrad/autograd/grad_mode.hpp"
 #include "cppgrad/tensor/tensor_fwd.hpp"
+
 #include <algorithm>
 #include <memory>
 #include <utility>
@@ -33,6 +35,11 @@ namespace autograd {
         template <typename... Tensors>
         void save_for_backward(Tensors&&... variables)
         {
+            // bypass save if NoGrad is active
+            if (!ThreadLocalGradState::get()) {
+                return;
+            }
+
             _saved_data.insert(_saved_data.end(), { variables.clone()... });
         }
 
