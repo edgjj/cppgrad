@@ -50,12 +50,12 @@ int main()
     try {
         autograd::ForceGradGuard guard;
 
-        auto t1 = Tensor::create<f32, CUDA>({ 1, 30 }, 23.0f);
-        auto y = Tensor({ { 23.0f } }).cuda();
+        auto t1 = Tensor::create<f32>({ 1, 30 }, 23.0f);
+        auto y = Tensor({ { 23.0f } });
 
         LinearNN nn;
         nn::optim::SGD optim(nn, 1e-3);
-        nn.cuda(); // switch to cuda mode
+        // nn.cuda() switches all params to CUDA
 
         constexpr size_t n_steps = 150;
         for (size_t k = 0; k < n_steps; k++) {

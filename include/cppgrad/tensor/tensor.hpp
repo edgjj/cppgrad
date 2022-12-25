@@ -220,7 +220,7 @@ public:
     bool operator==(const Tensor& rhs) const;
 
     /**
-     * @brief Fills Tensor with desired type
+     * @brief Fills Tensor, autocasted
      *
      * @tparam T
      * @param value
@@ -230,8 +230,8 @@ public:
     {
         for_each_type(
             [&, value](auto tag) {
-                using Type = decltype(tag);
-                auto casted_value = Type(value);
+                using CastedType = decltype(tag);
+                auto casted_value = CastedType(value);
                 auto* byte_ptr = reinterpret_cast<std::byte*>(&casted_value);
 
                 executor().fill(*this, byte_ptr);
