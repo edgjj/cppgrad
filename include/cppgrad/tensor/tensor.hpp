@@ -168,10 +168,44 @@ public:
     Tensor();
 
     template <typename Type, std::enable_if_t<std::is_arithmetic_v<Type>>* = nullptr>
-    Tensor(Type value);
+    Tensor(Type value, DType dtype = DType::undefined)
+    {
+        // autocast
+        if (dtype != DType::undefined) {
+            for_each_type(
+                [&, value](auto tag) {
+                    using CastedType = decltype(tag);
+
+                    *this = create<rtype_v<CastedType>>({ 1 }, CastedType(value));
+                },
+                dtype);
+        } else {
+            *this = create<rtype_v<Type>>({ 1 }, value);
+        }
+    }
 
     template <typename Type>
-    Tensor(std::initializer_list<Type> values);
+    Tensor(std::initializer_list<Type> values, DType dtype = DType::undefined)
+    {
+        if (dtype != DType::undefined) {
+            for_each_type(
+                [&, values](auto tag) {
+                    using CastedType = decltype(tag);
+
+                    std::vector<CastedType> imr_vector;
+
+                    for (auto& v : values) {
+                        imr_vector.push_back(v);
+                    }
+
+                    *this = from_blob<rtype_v<CastedType>>(imr_vector.data(), { imr_vector.size() });
+                },
+                dtype);
+        } else {
+            *this = from_blob<rtype_v<Type>>(const_cast<Type*>(values.begin()),
+                { values.size() });
+        }
+    }
 
     Tensor(std::initializer_list<Tensor> values);
 
@@ -192,7 +226,24 @@ public:
      * @param value
      */
     template <typename Type>
-    void fill(Type value);
+    void fill(Type value)
+    {
+        for_each_type(
+            [&, value](auto tag) {
+                using Type = decltype(tag);
+                auto casted_value = Type(value);
+                auto* byte_ptr = reinterpret_cast<std::byte*>(&casted_value);
+
+                executor().fill(*this, byte_ptr);
+            },
+            dtype());
+    }
+
+    template <typename Type>
+    void random_fill(Type lower_bound = -1, Type upper_bound = 1)
+    {
+        executor().random_fill(*this, lower_bound, upper_bound);
+    }
 
     /**
      * @brief Queries scalar from tensor, given type T.

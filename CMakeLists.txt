@@ -33,6 +33,7 @@ file (GLOB
 	include/cppgrad/tensor/*.hpp
 	include/cppgrad/tensor/util/*.hpp
 	include/cppgrad/itertools/*.hpp
+	include/cppgrad/nn/*.hpp
 )
 
 set(CPPGRAD_DEVICE_INCLUDES 
@@ -47,6 +48,7 @@ file (GLOB
 	src/*.cpp
 	src/tensor/*.cpp
 	src/autograd/*.cpp
+	src/nn/*.cpp
 )
 
 add_library (cppgrad 

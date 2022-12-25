@@ -126,6 +126,10 @@ Tensor mm(const Tensor& lhs, const Tensor& rhs)
 
     // if not dot product
     if (lhs.shape() != rhs.shape() || lhs.shape().size() != 1) {
+        CPPGRAD_CHECK_FALSE(lhs.shape().size() != 2 || rhs.shape().size() != 2,
+            exceptions::GenericError,
+            "Matmul requires both Tensors be 2-dim");
+
         CPPGRAD_CHECK_EQ(lhs.shape()[1], rhs.shape()[0],
             exceptions::GenericError,
             "LHS cols size not eq to RHS rows");

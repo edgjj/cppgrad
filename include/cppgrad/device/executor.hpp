@@ -55,6 +55,15 @@ struct Executor {
      */
     virtual void fill(Tensor& tensor, std::byte* value) = 0;
 
+    /**
+     * @brief Assigns random values in Tensor
+     *
+     * @param tensor
+     * @param lower_bound
+     * @param upper_bound
+     */
+    virtual void random_fill(Tensor& tensor, double lower_bound, double upper_bound) = 0;
+
     virtual void add(const Tensor& lhs, const Tensor& rhs, Tensor& dst) = 0;
     virtual void sub(const Tensor& lhs, const Tensor& rhs, Tensor& dst) = 0;
     virtual void mul(const Tensor& lhs, const Tensor& rhs, Tensor& dst) = 0;

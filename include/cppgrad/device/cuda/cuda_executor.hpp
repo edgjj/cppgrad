@@ -17,6 +17,7 @@ struct CUDAExecutor : Executor {
     void strided_copy(const Tensor& from, Tensor& to) override;
 
     void fill(Tensor& tensor, std::byte* value) override;
+    void random_fill(Tensor& tensor, double lower_bound, double upper_bound) override;
 
     void add(const Tensor& lhs, const Tensor& rhs, Tensor& dst) override;
     void sub(const Tensor& lhs, const Tensor& rhs, Tensor& dst) override;

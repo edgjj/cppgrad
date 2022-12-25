@@ -5,6 +5,8 @@
 #include "cppgrad/tensor/util/strided_span.hpp"
 #include <cuda.h>
 
+#include <thrust/random.h>
+
 namespace cppgrad::impl {
 
 struct DotReduceTag { };
@@ -25,6 +27,24 @@ __global__ void fill_kernel(StridedSpan<T> out, T val)
     CPPGRAD_CUDA_1D_LOOP(i, out.size())
     {
         out[i] = val;
+    }
+}
+
+template <typename T>
+__global__ void random_fill_kernel(StridedSpan<T> out, double upper_bound, double lower_bound)
+{
+    thrust::default_random_engine engine(blockDim.x * blockIdx.x + threadIdx.x);
+
+    CPPGRAD_CUDA_1D_LOOP(i, out.size())
+    {
+        engine.discard(i);
+        if constexpr (std::is_integral_v<T>) {
+            thrust::uniform_int_distribution<T> dist((T)lower_bound, (T)upper_bound);
+            out[i] = dist(engine);
+        } else {
+            thrust::uniform_real_distribution<T> dist(lower_bound, upper_bound);
+            out[i] = dist(engine);
+        }
     }
 }
 

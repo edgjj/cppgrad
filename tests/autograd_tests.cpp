@@ -191,7 +191,7 @@ TEST(AutogradTests, MathOpsNoSignTests)
  */
 TEST(AutogradTest, MatmulSumMSETest)
 {
-    auto x = Tensor { { 4.2, 6.3, 1.0, 4.0, 2.0, 0.03, 4.3, 0.32 } }.T();
+    auto x = Tensor { { 4.2, 6.3, 1.0, 4.0, 2.0, 0.03, 4.3, 0.32 } };
 
     // let it be 2 output perceptron
     Tensor w {
@@ -203,7 +203,7 @@ TEST(AutogradTest, MatmulSumMSETest)
     w.set_requires_grad(true);
     b.set_requires_grad(true);
 
-    auto y_hat = mm(w, x) + b;
+    auto y_hat = mm(w, x.T()) + b;
     EXPECT_NEAR(y_hat[0].item<f64>(), 23.135999275189, 1e-4);
     EXPECT_NEAR(y_hat[1].item<f64>(), 162.345988261853, 1e-4);
 

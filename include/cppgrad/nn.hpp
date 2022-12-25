@@ -40,20 +40,6 @@ namespace nn {
         std::vector<Module*> _child;
         Module* _parent; // no ownership; btw could be made better thru class-local shit
     };
-
-    /*
-
-    Sequential<
-            Linear<InputSize, OutputSize>,
-            Act::Tanh
-            Linear<OutputSize, OutputSize2>,
-            Act::Tanh,
-            Linear<OutputSize2, 1>
-            Act::Sigmoid
-    >
-
-    */
-
 }
 
 }

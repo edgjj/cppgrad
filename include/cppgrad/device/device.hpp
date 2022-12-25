@@ -49,7 +49,7 @@ struct Device {
      *
      * @return Device*
      */
-    virtual Device* clone() = 0;
+    virtual Device* clone() const = 0;
 
     virtual ~Device() = default;
 };

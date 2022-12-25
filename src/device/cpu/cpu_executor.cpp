@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <random>
 #include <tuple>
 
 namespace cppgrad::impl {
@@ -40,6 +41,32 @@ void CPUExecutor::fill(Tensor& tensor, std::byte* value)
             [&](size_t k) {
                 out[k] = fill_value;
             });
+    };
+
+    for_each_type(OpWrapper1D { std::move(fn), tensor, tensor, tensor }, tensor.dtype());
+}
+
+void CPUExecutor::random_fill(Tensor& tensor, double lower_bound, double upper_bound)
+{
+    auto fn = [lower_bound, upper_bound](auto out, auto p1, auto p2) {
+        using Type = typename decltype(out)::Type;
+        std::mt19937 engine(std::random_device {}());
+
+        if constexpr (std::is_integral_v<Type>) {
+            std::uniform_int_distribution<Type> dist { (Type)lower_bound, (Type)upper_bound };
+
+            async::parallel_for(async::irange(0ull, out.size()),
+                [&](size_t k) {
+                    out[k] = dist(engine);
+                });
+        } else {
+            std::uniform_real_distribution<Type> dist { (Type)lower_bound, (Type)upper_bound };
+
+            async::parallel_for(async::irange(0ull, out.size()),
+                [&](size_t k) {
+                    out[k] = dist(engine);
+                });
+        }
     };
 
     for_each_type(OpWrapper1D { std::move(fn), tensor, tensor, tensor }, tensor.dtype());

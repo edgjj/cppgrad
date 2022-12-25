@@ -29,7 +29,7 @@ impl::Executor& CPU::get_executor()
     return executor;
 }
 
-Device* CPU::clone()
+Device* CPU::clone() const
 {
     return new CPU();
 }

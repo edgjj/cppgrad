@@ -96,20 +96,6 @@ Tensor::Tensor()
 {
 }
 
-template <typename Type, std::enable_if_t<std::is_arithmetic_v<Type>>*>
-Tensor::Tensor(Type value)
-{
-    // this is kinda weird to pass index and then cast it back to type
-    *this = create<rtype_v<Type>>({ 1 }, value);
-}
-
-template <typename Type>
-Tensor::Tensor(std::initializer_list<Type> values)
-{
-    *this = from_blob<rtype_v<Type>>(const_cast<Type*>(values.begin()),
-        { values.size() });
-}
-
 // ugly, is subject to change
 Tensor::Tensor(std::initializer_list<Tensor> values)
 {
@@ -143,26 +129,15 @@ bool Tensor::operator==(const Tensor& rhs) const
     return _storage == rhs._storage;
 }
 
-template <typename Type>
-void Tensor::fill(Type value)
-{
-    CPPGRAD_CHECK_EQ(rtype_v<Type>, _storage->_type_id,
-        exceptions::TypeError,
-        rtype_v<Type>, _storage->_type_id);
-
-    auto* byte_ptr = reinterpret_cast<std::byte*>(&value);
-    executor().fill(*this, byte_ptr);
-}
-
 template <DType DataType>
 dtype_t<DataType> Tensor::item()
 {
     CPPGRAD_CHECK_FALSE(empty(),
         exceptions::IndexError);
 
-    CPPGRAD_CHECK_FALSE(shape().size() > 1 || shape()[0] > 1,
+    CPPGRAD_CHECK_FALSE(numel() > 1,
         exceptions::GenericError,
-        "Can only convert tensor of size 1 to a scalar.");
+        "Can only convert tensor having 1 element to a scalar.");
 
     CPPGRAD_CHECK_EQ(DataType, _storage->_type_id,
         exceptions::TypeError, DataType, _storage->_type_id);
@@ -247,6 +222,10 @@ Tensor Tensor::T()
 
     result._base = base_storage();
 
+    if (requires_grad()) {
+        result._storage->_autograd_context = autograd::impl::AutogradContextFactory::make();
+    }
+
     return result;
 }
 
@@ -275,6 +254,9 @@ Tensor Tensor::cuda()
 
     auto new_tensor = create_dirty(shape(), dtype(), (size_t)_storage->_alignment, new CUDA());
     new_tensor.executor().copy(data(), new_tensor.data(), new_tensor.nbytes(), impl::HostToDevice);
+    if (requires_grad()) {
+        new_tensor.set_requires_grad(true);
+    }
 
     return new_tensor;
 }
@@ -288,6 +270,10 @@ Tensor Tensor::cpu()
 
     auto new_tensor = create_dirty(shape(), dtype(), (size_t)_storage->_alignment, new CPU());
     executor().copy(data(), new_tensor.data(), new_tensor.nbytes(), impl::DeviceToHost); // use CUDA executor
+
+    if (requires_grad()) {
+        new_tensor.set_requires_grad(true);
+    }
 
     return new_tensor;
 }
@@ -339,12 +325,12 @@ Tensor Tensor::loop(const std::vector<size_t>& fake_shape) const
     if (shape().size() != 1 || shape()[0] != 1) {
         throw exceptions::GenericError("Looping requires Tensor have 1 element available");
     }
-    
-    // fake shape and zero out stride
-    std::vector<size_t> new_shape{ fake_shape };
-    std::vector<size_t> new_strides{ 0 };
 
-    Tensor result{ _storage->_chunk,
+    // fake shape and zero out stride
+    std::vector<size_t> new_shape { fake_shape };
+    std::vector<size_t> new_strides { 0 };
+
+    Tensor result { _storage->_chunk,
         std::move(new_shape),
         std::move(new_strides),
         _storage->_alignment,
@@ -492,30 +478,6 @@ Tensor::Tensor(std::shared_ptr<impl::TensorData> base_storage)
 }
 
 // template instantiations go here
-
-/* Tensor::Tensor(Type value) */
-template Tensor::Tensor(dtype_t<u32> value);
-template Tensor::Tensor(dtype_t<u64> value);
-template Tensor::Tensor(dtype_t<i32> value);
-template Tensor::Tensor(dtype_t<i64> value);
-template Tensor::Tensor(dtype_t<f32> value);
-template Tensor::Tensor(dtype_t<f64> value);
-
-/* Tensor::Tensor(std::initializer_list<Type> values) */
-template Tensor::Tensor(std::initializer_list<dtype_t<u32>> values);
-template Tensor::Tensor(std::initializer_list<dtype_t<u64>> values);
-template Tensor::Tensor(std::initializer_list<dtype_t<i32>> values);
-template Tensor::Tensor(std::initializer_list<dtype_t<i64>> values);
-template Tensor::Tensor(std::initializer_list<dtype_t<f32>> values);
-template Tensor::Tensor(std::initializer_list<dtype_t<f64>> values);
-
-/* Tensor::fill */
-template void Tensor::fill<dtype_t<u32>>(dtype_t<u32> value);
-template void Tensor::fill<dtype_t<u64>>(dtype_t<u64> value);
-template void Tensor::fill<dtype_t<i32>>(dtype_t<i32> value);
-template void Tensor::fill<dtype_t<i64>>(dtype_t<i64> value);
-template void Tensor::fill<dtype_t<f32>>(dtype_t<f32> value);
-template void Tensor::fill<dtype_t<f64>>(dtype_t<f64> value);
 
 /* Tensor::item */
 template dtype_t<u32> Tensor::item<u32>();

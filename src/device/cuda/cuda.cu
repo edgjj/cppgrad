@@ -62,7 +62,7 @@ impl::Executor& CUDA::get_executor()
     return executor;
 }
 
-Device* CUDA::clone()
+Device* CUDA::clone() const
 {
     return new CUDA();
 }

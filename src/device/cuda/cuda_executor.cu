@@ -56,6 +56,16 @@ void CUDAExecutor::fill(Tensor& tensor, std::byte* value)
     for_each_type(OpWrapper1D { std::move(fn), tensor, tensor, tensor }, tensor.dtype());
 }
 
+void CUDAExecutor::random_fill(Tensor& tensor, double lower_bound, double upper_bound)
+{
+    auto fn = [lower_bound, upper_bound](auto out, auto p1, auto p2) {
+        CPPGRAD_CUDA_LAUNCH(random_fill_kernel, out.size())
+        (out, lower_bound, upper_bound);
+    };
+
+    for_each_type(OpWrapper1D { std::move(fn), tensor, tensor, tensor }, tensor.dtype());
+}
+
 void CUDAExecutor::add(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 {
     auto fn = [](auto out, auto p1, auto p2) {
