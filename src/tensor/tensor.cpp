@@ -5,6 +5,7 @@
 #include "cppgrad/tensor/tensor.hpp"
 
 #include "cppgrad/device/cuda/cuda.hpp"
+#include "cppgrad/tensor/ops/grad_ops.hpp"
 
 namespace cppgrad {
 
@@ -210,23 +211,10 @@ Tensor Tensor::base()
 
 Tensor Tensor::T()
 {
-    std::vector<size_t> new_shape { shape().rbegin(), shape().rend() };
-    std::vector<size_t> new_strides { strides().rbegin(), strides().rend() };
+    std::vector<size_t> perm(shape().size());
+    std::iota(perm.rbegin(), perm.rend(), 0);
 
-    Tensor result { _storage->_chunk,
-        std::move(new_shape),
-        std::move(new_strides),
-        _storage->_alignment,
-        _storage->_device,
-        _storage->_type_id };
-
-    result._base = base_storage();
-
-    if (requires_grad()) {
-        result._storage->_autograd_context = autograd::impl::AutogradContextFactory::make();
-    }
-
-    return result;
+    return PermuteOp::apply({ *this }, std::move(perm))[0];
 }
 
 Device& Tensor::device() const
@@ -301,7 +289,14 @@ Tensor Tensor::clone() const
     auto new_tensor = create_dirty(shape(), dtype(), get_align(), device().clone());
     // copy strides to be the same
     new_tensor._storage->_strides = _storage->_strides;
-    executor().copy(data(), new_tensor.data(), nbytes());
+
+    // this is loop detection basically
+    if (!empty() && _storage->_strides.size() == 1 && _storage->_strides[0] == 0) {
+        // copy exact single element
+        executor().copy(data(), new_tensor.data(), dtype_size(dtype()));
+    } else {
+        executor().copy(data(), new_tensor.data(), nbytes());
+    }
 
     return new_tensor;
 }

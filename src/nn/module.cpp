@@ -5,11 +5,6 @@ namespace cppgrad::nn {
 
 Module::~Module() = default;
 
-tensor_list Module::operator()(tensor_list inputs)
-{
-    return forward(std::move(inputs));
-}
-
 tensor_ptr_list Module::get_parameters()
 {
     tensor_ptr_list parameter_list;

@@ -347,4 +347,40 @@ tensor_list SumOp::backward(const Tensor& prev_grad)
     return { grad };
 }
 
+PermuteOp::PermuteOp(std::vector<size_t> order)
+{
+    _saved_order = std::move(order);
+}
+
+tensor_list PermuteOp::forward(tensor_list inputs)
+{
+    auto& x = inputs[0];
+    auto out = x.clone();
+
+    for (size_t k = 0; k < _saved_order.size(); k++) {
+        out._storage->_shape[k] = x._storage->_shape[_saved_order[k]];
+        out._storage->_strides[k] = x._storage->_strides[_saved_order[k]];
+    }
+
+    return { out };
+}
+
+tensor_list PermuteOp::backward(const Tensor& prev_grad)
+{
+    auto grad = prev_grad.clone();
+    std::vector<size_t> new_order(_saved_order.size());
+
+    std::iota(new_order.begin(), new_order.end(), 0);
+    std::sort(new_order.begin(), new_order.end(), [&](size_t a, size_t b) {
+        return _saved_order[a] < _saved_order[b];
+    });
+
+    for (size_t k = 0; k < new_order.size(); k++) {
+        grad._storage->_shape[k] = prev_grad._storage->_shape[new_order[k]];
+        grad._storage->_strides[k] = prev_grad._storage->_strides[new_order[k]];
+    }
+
+    return { grad };
+}
+
 }

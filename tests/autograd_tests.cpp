@@ -203,9 +203,9 @@ TEST(AutogradTest, MatmulSumMSETest)
     w.set_requires_grad(true);
     b.set_requires_grad(true);
 
-    auto y_hat = mm(w, x.T()) + b;
-    EXPECT_NEAR(y_hat[0].item<f64>(), 23.135999275189, 1e-4);
-    EXPECT_NEAR(y_hat[1].item<f64>(), 162.345988261853, 1e-4);
+    auto y_hat = mm(x, w.T()) + b;
+    EXPECT_NEAR(y_hat(0, 0).item<f64>(), 23.135999275189, 1e-4);
+    EXPECT_NEAR(y_hat(0, 1).item<f64>(), 162.345988261853, 1e-4);
 
     y_hat = relu(y_hat);
 
@@ -236,6 +236,6 @@ TEST(AutogradTest, MatmulSumMSETest)
     EXPECT_NEAR(w.grad()(1, 6).item<f64>(), 6.976577804655e+02, 1e-4);
     EXPECT_NEAR(w.grad()(1, 7).item<f64>(), 5.191871508284e+01, 1e-4);
 
-    EXPECT_NEAR(b.grad()[0].item<f64>(), 22.215999258500, 1e-4);
-    EXPECT_NEAR(b.grad()[1].item<f64>(), 162.245988260362, 1e-4);
+    EXPECT_NEAR(b.grad()(0, 0).item<f64>(), 22.215999258500, 1e-4);
+    EXPECT_NEAR(b.grad()(0, 1).item<f64>(), 162.245988260362, 1e-4);
 }

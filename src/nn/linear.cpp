@@ -11,13 +11,13 @@ Linear::Linear(size_t in_size, size_t out_size, bool needs_bias)
     }
 
     _w = Tensor::create<f32>({ out_size, in_size }, 1.0f);
-    _w.random_fill(-5, 5);
+    _w.random_fill(-0.25, 0.25);
 
     _w.set_requires_grad(true);
 
     if (needs_bias) {
         _b = Tensor::create<f32>({ out_size }, 1.0f);
-        _b.random_fill(-5, 5);
+        _b.random_fill(-0.25, 0.25);
 
         _b.set_requires_grad(true);
     }
@@ -26,7 +26,7 @@ Linear::Linear(size_t in_size, size_t out_size, bool needs_bias)
 tensor_list Linear::forward(tensor_list inputs)
 {
     auto& x = inputs[0];
-    auto y_hat = cppgrad::mm(_w, x.T());
+    auto y_hat = cppgrad::mm(x, _w.T());
 
     if (!_b.empty()) {
         y_hat += _b;

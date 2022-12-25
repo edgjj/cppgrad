@@ -239,8 +239,8 @@ public:
             dtype());
     }
 
-    template <typename Type>
-    void random_fill(Type lower_bound = -1, Type upper_bound = 1)
+    template <typename Type = double>
+    void random_fill(Type lower_bound = -1.0, Type upper_bound = 1.0)
     {
         executor().random_fill(*this, lower_bound, upper_bound);
     }
@@ -441,7 +441,9 @@ public:
     void backward();
 
     ~Tensor();
+
     friend struct std::hash<Tensor>;
+    friend struct PermuteOp;
 
 private:
     /**

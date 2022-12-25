@@ -78,6 +78,16 @@ private:
     std::vector<size_t> _saved_shape;
 };
 
+struct PermuteOp : autograd::CustomNode<PermuteOp> {
+    PermuteOp(std::vector<size_t> order);
+
+    tensor_list forward(tensor_list inputs) override;
+    tensor_list backward(const Tensor& prev_grad) override;
+
+private:
+    std::vector<size_t> _saved_order;
+};
+
 }
 
 #endif

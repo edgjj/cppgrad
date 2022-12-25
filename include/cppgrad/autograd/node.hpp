@@ -65,17 +65,19 @@ namespace autograd {
 
     template <typename Fn>
     struct CustomNode : Node {
-        static tensor_list apply(tensor_list inputs)
+
+        template <typename... OpArgs>
+        static tensor_list apply(tensor_list inputs, OpArgs&&... args)
         {
             // check if at least 1 input requires grad; if not - just make pure forward call
             if (std::find_if(inputs.begin(), inputs.end(), [](auto& t) { return t.requires_grad(); }) == inputs.end()) {
-                auto fn = Fn{};
+                auto fn = Fn{std::forward<OpArgs>(args)...};
                 fn.set_no_save(true);
 
                 return fn.forward(std::move(inputs));
             }
 
-            std::shared_ptr<Node> op { new Fn() };
+            std::shared_ptr<Node> op { new Fn(std::forward<OpArgs>(args)...) };
 
             op->set_edges(inputs);
             return impl::apply_finish(inputs, op);

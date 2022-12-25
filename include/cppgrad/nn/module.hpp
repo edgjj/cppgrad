@@ -13,7 +13,18 @@ using tensor_ptr_list = std::vector<Tensor*>;
 struct Module {
 
     virtual tensor_list forward(tensor_list inputs) = 0;
-    tensor_list operator()(tensor_list inputs);
+
+    template <typename... Tensors>
+    tensor_list operator()(Tensors&&... tensors)
+    {
+        return forward({ std::forward<Tensors>(tensors)... });
+    }
+
+    template <>
+    tensor_list operator()(const tensor_list& inputs)
+    {
+        return forward(inputs);
+    }
 
     void cpu();
     void cuda();
