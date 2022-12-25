@@ -10,7 +10,7 @@
 using namespace cppgrad;
 
 template <DType DataType>
-void print_tensor(Tensor& data)
+void print_tensor(const Tensor& data)
 {
     std::cout << std::setprecision(8);
     if (data.shape().size() > 1) {
@@ -60,7 +60,7 @@ int main()
         auto t1 = Tensor::create<f32>({ 1, MNIST_W * MNIST_H }, 1.0f);
         t1.random_fill();
 
-        auto y = Tensor{ { 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f } };
+        auto y = Tensor { { 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f } };
 
         LinearNN nn;
         nn::optim::SGD optim(nn, 1e-2);
@@ -83,7 +83,7 @@ int main()
             std::cout << "Loss: ";
             print_tensor<f32>(loss);
 
-            std::cout << "Real Y: "; 
+            std::cout << "Real Y: ";
             print_tensor<f32>(y);
         }
 

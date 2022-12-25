@@ -131,7 +131,7 @@ bool Tensor::operator==(const Tensor& rhs) const
 }
 
 template <DType DataType>
-dtype_t<DataType> Tensor::item()
+dtype_t<DataType> Tensor::item() const
 {
     CPPGRAD_CHECK_FALSE(empty(),
         exceptions::IndexError);
@@ -157,7 +157,7 @@ dtype_t<DataType> Tensor::item()
     return *reinterpret_cast<ResultType*>(_storage->_chunk);
 }
 
-Tensor Tensor::operator[](size_t index)
+Tensor Tensor::operator[](size_t index) const
 {
     return (*this)(index);
 }
@@ -475,11 +475,11 @@ Tensor::Tensor(std::shared_ptr<impl::TensorData> base_storage)
 // template instantiations go here
 
 /* Tensor::item */
-template dtype_t<u32> Tensor::item<u32>();
-template dtype_t<u64> Tensor::item<u64>();
-template dtype_t<i32> Tensor::item<i32>();
-template dtype_t<i64> Tensor::item<i64>();
-template dtype_t<f32> Tensor::item<f32>();
-template dtype_t<f64> Tensor::item<f64>();
+template dtype_t<u32> Tensor::item<u32>() const;
+template dtype_t<u64> Tensor::item<u64>() const;
+template dtype_t<i32> Tensor::item<i32>() const;
+template dtype_t<i64> Tensor::item<i64>() const;
+template dtype_t<f32> Tensor::item<f32>() const;
+template dtype_t<f64> Tensor::item<f64>() const;
 
 }

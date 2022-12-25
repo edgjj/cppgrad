@@ -21,7 +21,7 @@ enum DType {
 
 namespace impl {
 
-    using TypesTuple = std::tuple<uint32_t, uint64_t, int32_t, int64_t, float, double>;
+    using TypesTuple = std::tuple<uint32_t, uint64_t, int32_t, int64_t, float, double, void*>;
 
     template <DType T>
     struct Type {

@@ -20,7 +20,6 @@ struct Module {
         return forward({ std::forward<Tensors>(tensors)... });
     }
 
-    template <>
     tensor_list operator()(const tensor_list& inputs)
     {
         return forward(inputs);

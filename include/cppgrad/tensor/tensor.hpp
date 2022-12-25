@@ -86,7 +86,7 @@ public:
      */
 
     template <typename... Indices>
-    Tensor operator()(Indices... variadic_index)
+    Tensor operator()(Indices... variadic_index) const
     {
         constexpr size_t indices_size = sizeof...(Indices);
         size_t indices[indices_size] = { static_cast<size_t>(variadic_index)... };
@@ -255,7 +255,7 @@ public:
      * @return T scalar
      */
     template <DType DataType>
-    dtype_t<DataType> item();
+    dtype_t<DataType> item() const;
 
     /**
      * @brief Indexing operator. 1-dim operator() wrapper.
@@ -263,7 +263,7 @@ public:
      * @param index
      * @return Tensor
      */
-    Tensor operator[](size_t index);
+    Tensor operator[](size_t index) const;
 
     /**
      * @brief Retrieves current data type stored in Tensor.
