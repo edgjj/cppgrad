@@ -13,6 +13,7 @@ Tensor operator-(const Tensor& lhs);
 
 Tensor pow(const Tensor& lhs, const Tensor& rhs);
 Tensor mm(const Tensor& lhs, const Tensor& rhs);
+Tensor sum(const Tensor& lhs);
 
 Tensor& operator+=(Tensor& lhs, const Tensor& rhs);
 Tensor& operator-=(Tensor& lhs, const Tensor& rhs);

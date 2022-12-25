@@ -18,14 +18,16 @@ struct CUDAExecutor : Executor {
 
     void fill(Tensor& tensor, std::byte* value) override;
 
-    void sum(const Tensor& lhs, const Tensor& rhs, Tensor& dst) override;
+    void add(const Tensor& lhs, const Tensor& rhs, Tensor& dst) override;
     void sub(const Tensor& lhs, const Tensor& rhs, Tensor& dst) override;
     void mul(const Tensor& lhs, const Tensor& rhs, Tensor& dst) override;
     void div(const Tensor& lhs, const Tensor& rhs, Tensor& dst) override;
 
     void pow(const Tensor& lhs, const Tensor& rhs, Tensor& dst) override;
-    void dot(const Tensor& lhs, const Tensor& rhs, Tensor& dst) override;
     void matmul(const Tensor& lhs, const Tensor& rhs, Tensor& dst) override;
+
+    void dot(const Tensor& lhs, const Tensor& rhs, Tensor& dst) override;
+    void sum(const Tensor& lhs, Tensor& dst) override;
 
     void log(const Tensor& lhs, Tensor& dst) override;
     void exp(const Tensor& lhs, Tensor& dst) override;

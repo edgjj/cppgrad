@@ -10,7 +10,7 @@ tensor_list AddOp::forward(tensor_list inputs)
          &y = inputs[1];
 
     auto out = x.clone();
-    out.executor().sum(out, y, out);
+    out.executor().add(out, y, out);
 
     return { out };
 }
@@ -93,7 +93,7 @@ tensor_list DivisionOp::backward(const Tensor& prev_grad)
          grad_y = y.clone();
 
     // (y*grad - x * grad) / y^2
-    grad_x.executor().mul(prev_grad, y, grad_x); // f'(x) * y 
+    grad_x.executor().mul(prev_grad, y, grad_x); // f'(x) * y
     grad_y.executor().mul(prev_grad, x, grad_y); // g'(x) * x
 
     // pow 2
@@ -167,7 +167,7 @@ tensor_list MatmulOp::backward(const Tensor& prev_grad)
     grad_x.executor().matmul(prev_grad, y.T(), grad_x); // grad_x = g @ y_T
     grad_y.executor().matmul(x.T(), prev_grad, grad_y); // grad_y = x_T @ g
 
-    return { grad_y, grad_y };
+    return { grad_x, grad_y };
 }
 
 // DotProductOp
@@ -177,8 +177,8 @@ tensor_list DotProductOp::forward(tensor_list inputs)
          &y = inputs[1];
 
     auto out = Tensor::create_dirty({ 1 }, x.dtype(), x.get_align(), x.device().clone());
-
     out.executor().dot(x, y, out);
+
     save_for_backward(x, y);
 
     return { out };
@@ -196,7 +196,6 @@ tensor_list DotProductOp::backward(const Tensor& prev_grad)
     grad_x.executor().mul(y, prev_grad.loop(y.shape()), grad_x);
     grad_y.executor().mul(x, prev_grad.loop(y.shape()), grad_y);
 
-    return { grad_x, grad_y };
     return { grad_x, grad_y };
 }
 
@@ -327,6 +326,24 @@ tensor_list NegOp::backward(const Tensor& prev_grad)
     auto grad = prev_grad.clone();
     grad.executor().neg(prev_grad, grad); // negate grad
 
+    return { grad };
+}
+
+// SumOp
+tensor_list SumOp::forward(tensor_list inputs)
+{
+    auto& x = inputs[0];
+    _saved_shape = x.shape();
+
+    auto out = Tensor::create_dirty({ 1 }, x.dtype(), x.get_align(), x.device().clone());
+    out.executor().sum(x, out);
+
+    return { out };
+}
+
+tensor_list SumOp::backward(const Tensor& prev_grad)
+{
+    auto grad = prev_grad.clone().loop(_saved_shape);
     return { grad };
 }
 

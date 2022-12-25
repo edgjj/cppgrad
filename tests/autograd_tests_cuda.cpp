@@ -5,15 +5,17 @@
 
 using namespace cppgrad;
 
+#ifdef CPPGRAD_HAS_CUDA
+
 /**
  *  Ensure that Sum, Mul, Relu backwards are ok.
  */
-TEST(AutogradTests, MicrogradTest1)
+TEST(AutogradCudaTests, MicrogradTest1)
 {
-    auto x = Tensor(-2.0);
+    auto x = Tensor(-2.0).cuda();
     x.set_requires_grad(true);
 
-    auto z = Tensor(2.0) * x + Tensor(2.0) + x;
+    auto z = Tensor(2.0).cuda() * x + Tensor(2.0).cuda() + x;
 
     auto h = relu(z * z);
     auto q = relu(z) + z * x;
@@ -29,24 +31,24 @@ TEST(AutogradTests, MicrogradTest1)
  *  Ensure that Sum, Div, Mul, Relu, Pow, Neg backwards are ok.
  *  Also checks += operator.
  */
-TEST(AutogradTests, MicrogradTest2)
+TEST(AutogradCudaTests, MicrogradTest2)
 {
-    auto a = Tensor(-4.0);
-    auto b = Tensor(2.0);
+    auto a = Tensor(-4.0).cuda();
+    auto b = Tensor(2.0).cuda();
     a.set_requires_grad(true);
     b.set_requires_grad(true);
 
     auto c = a + b;
-    auto d = a * b + pow(b, 3.0);
-    c += c + 1.0;
+    auto d = a * b + pow(b, Tensor(3.0).cuda());
+    c += c + Tensor(1.0).cuda();
 
-    c += 1.0 + c + (-a);
-    d += d * 2.0 + relu(b + a);
-    d += 3.0 * d + relu(b - a);
+    c += Tensor(1.0).cuda() + c + (-a);
+    d += d * Tensor(2.0).cuda() + relu(b + a);
+    d += Tensor(3.0).cuda() * d + relu(b - a);
     auto e = c - d;
-    auto f = pow(e, 2.0);
-    auto g = f / 2.0;
-    g += 10.0 / f;
+    auto f = pow(e, Tensor(2.0).cuda());
+    auto g = f / Tensor(2.0).cuda();
+    g += Tensor(10.0).cuda() / f;
 
     g.backward();
 
@@ -64,26 +66,26 @@ TEST(AutogradTests, MicrogradTest2)
 /**
  *  Ensure that Matmul, Sum backwards are ok.
  */
-TEST(AutogradTests, MatmulSumTest)
+TEST(AutogradCudaTests, MatmulSumTest)
 {
-    Tensor t1 = Tensor {
+    auto t1 = Tensor {
         { 1, 2, 3 },
         { 9, 4, 5 }
-    };
+    }.cuda();
 
-    Tensor t2 = Tensor {
+    auto t2 = Tensor {
         { 4, 3 },
         { 1, 0 },
         { 9, 3 }
-    };
+    }.cuda();
 
     t1.set_requires_grad(true);
     t2.set_requires_grad(true);
 
-    Tensor t3 = Tensor {
+    auto t3 = Tensor {
         { 1, 4 },
         { 3, 1 }
-    };
+    }.cuda();
 
     auto v1 = mm(t1, t2);
     v1 += t3;
@@ -108,20 +110,15 @@ TEST(AutogradTests, MatmulSumTest)
 /**
  *  Ensure that DotProduct, Mul backwards are ok.
  */
-TEST(AutogradTests, DotProductMulTest)
+TEST(AutogradCudaTests, DotProductMulTest)
 {
-    Tensor t1 = Tensor {
-        1, 2, 3, 9, 4, 5
-    };
-
-    Tensor t2 = Tensor {
-        4, 3, 1, 0, 9, 3
-    };
+    auto t1 = Tensor { 1, 2, 3, 9, 4, 5 }.cuda();
+    auto t2 = Tensor { 4, 3, 1, 0, 9, 3 }.cuda();
 
     t1.set_requires_grad(true);
     t2.set_requires_grad(true);
 
-    Tensor t3 = Tensor { 123 };
+    Tensor t3 = Tensor { 123 }.cuda();
 
     auto v1 = mm(t1, t2);
     v1 *= t3;
@@ -147,10 +144,10 @@ TEST(AutogradTests, DotProductMulTest)
  * Ensures that Mul, Relu, Tanh, Exp, Log, Neg, Sign backwards are ok.
  * Also tests grad resetting.
  */
-TEST(AutogradTests, MathOpsNoSignTests)
+TEST(AutogradCudaTests, MathOpsNoSignTests)
 {
-    Tensor t1 { 0.4 };
-    Tensor t2 { 0.2 };
+    auto t1 = Tensor { 0.4 }.cuda();
+    auto t2 = Tensor { 0.2 }.cuda();
 
     t1.set_requires_grad(true);
     t2.set_requires_grad(true);
@@ -163,8 +160,8 @@ TEST(AutogradTests, MathOpsNoSignTests)
     EXPECT_NEAR(t2.grad().item<f64>(), -0.3975, 1e-4);
     EXPECT_NEAR(v1.item<f64>(), -0.0798, 1e-4);
 
-    t1 = 0.1;
-    t2 = 0.4;
+    t1 = Tensor { 0.1 }.cuda();
+    t2 = Tensor { 0.4 }.cuda();
     ASSERT_FALSE(t1.requires_grad());
     ASSERT_FALSE(t2.requires_grad());
 
@@ -189,17 +186,17 @@ TEST(AutogradTests, MathOpsNoSignTests)
  *  y_hat = relu(y_hat)
  *  loss = MSE(y_hat, y)
  */
-TEST(AutogradTest, MatmulSumMSETest)
+TEST(AutogradCudaTests, MatmulSumMSETest)
 {
-    auto x = Tensor { { 4.2, 6.3, 1.0, 4.0, 2.0, 0.03, 4.3, 0.32 } }.T();
+    auto x = Tensor { { 4.2, 6.3, 1.0, 4.0, 2.0, 0.03, 4.3, 0.32 } }.cuda().T();
 
     // let it be 2 output perceptron
-    Tensor w {
+    auto w = Tensor {
         { 0.023, 2.11, 0.023, 2.11, 0.023, 2.11, 0.023, 2.11 },
-        { 32.023, 2.11, 2.023, 2.11, 0.023, 2.11, 0.723, 2.11 },
-    };
+        { 32.023, 2.11, 2.023, 2.11, 0.023, 2.11, 0.723, 2.11 }
+    }.cuda();
 
-    Tensor b { 0.4, 0.2 };
+    auto b = Tensor { 0.4, 0.2 }.cuda();
     w.set_requires_grad(true);
     b.set_requires_grad(true);
 
@@ -209,11 +206,11 @@ TEST(AutogradTest, MatmulSumMSETest)
 
     y_hat = relu(y_hat);
 
-    Tensor y { 0.92, 0.1 };
+    auto y = Tensor { 0.92, 0.1 }.cuda();
     auto loss = y_hat - y; // leverage need of unsqueezing things
     loss *= loss;
 
-    loss = sum(loss) / (double)y.numel();
+    loss = sum(loss) / Tensor((double)y.numel()).cuda();
     loss.backward();
 
     EXPECT_NEAR(loss.item<f64>(), 13408.655664817667, 1e-2);
@@ -239,3 +236,5 @@ TEST(AutogradTest, MatmulSumMSETest)
     EXPECT_NEAR(b.grad()[0].item<f64>(), 22.215999258500, 1e-4);
     EXPECT_NEAR(b.grad()[1].item<f64>(), 162.245988260362, 1e-4);
 }
+
+#endif

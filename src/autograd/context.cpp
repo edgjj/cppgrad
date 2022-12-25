@@ -53,19 +53,18 @@ private:
     std::shared_ptr<Node> _grad_fn; // can be shared between multiple Tensors
 };
 
-
 namespace impl {
 
-std::unique_ptr<AutogradInterface> AutogradContextFactory::make()
-{
-    return std::make_unique<AutogradContext>();
-}
+    std::unique_ptr<AutogradInterface> AutogradContextFactory::make()
+    {
+        return std::make_unique<AutogradContext>();
+    }
 
-const Tensor& AutogradContextFactory::empty_tensor()
-{
-    static Tensor _empty;
-    return _empty;
-}
+    const Tensor& AutogradContextFactory::empty_tensor()
+    {
+        static Tensor _empty;
+        return _empty;
+    }
 
     using tensor_list = std::vector<Tensor>;
     using tensor_hash_set = std::unordered_set<Tensor>;
@@ -147,7 +146,7 @@ void backward(Tensor& root)
                 n.grad() = std::move(g);
             } else {
                 // accumulate grad; g executor is actually same as n.grad() executor
-                g.executor().sum(n.grad(), g, n.grad());
+                g.executor().add(n.grad(), g, n.grad());
             }
         }
 

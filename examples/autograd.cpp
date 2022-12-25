@@ -26,7 +26,7 @@ struct AddOp : autograd::CustomNode<AddOp> {
              &y = inputs[1];
 
         auto out = x.clone();
-        x.executor().sum(x, y, out);
+        x.executor().add(x, y, out);
 
         return { out };
     }

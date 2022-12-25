@@ -339,14 +339,21 @@ Tensor Tensor::loop(const std::vector<size_t>& fake_shape) const
     if (shape().size() != 1 || shape()[0] != 1) {
         throw exceptions::GenericError("Looping requires Tensor have 1 element available");
     }
-
-    auto new_tensor = *this;
-
+    
     // fake shape and zero out stride
-    new_tensor._storage->_shape = fake_shape;
-    new_tensor._storage->_strides[0] = 0;
+    std::vector<size_t> new_shape{ fake_shape };
+    std::vector<size_t> new_strides{ 0 };
 
-    return new_tensor;
+    Tensor result{ _storage->_chunk,
+        std::move(new_shape),
+        std::move(new_strides),
+        _storage->_alignment,
+        _storage->_device,
+        _storage->_type_id };
+
+    result._base = base_storage();
+
+    return result;
 }
 
 bool Tensor::is_view() const

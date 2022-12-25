@@ -45,7 +45,7 @@ void CPUExecutor::fill(Tensor& tensor, std::byte* value)
     for_each_type(OpWrapper1D { std::move(fn), tensor, tensor, tensor }, tensor.dtype());
 }
 
-void CPUExecutor::sum(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
+void CPUExecutor::add(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 {
     auto fn = [](auto out, auto p1, auto p2) {
         async::parallel_for(async::irange(0ull, out.size()),
@@ -117,6 +117,20 @@ void CPUExecutor::dot(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
     };
 
     for_each_type(OpWrapper1D { std::move(fn), dst, lhs, rhs }, dst.dtype());
+}
+
+void CPUExecutor::sum(const Tensor& lhs, Tensor& dst)
+{
+    auto fn = [](auto out, auto p1, auto p2) {
+        using Type = typename decltype(out)::Type;
+
+        out[0] = async::parallel_map_reduce(
+            async::irange(0ull, p1.size()), Type(0), // start with 0
+            [&](size_t k) { return p1[k]; }, // fwd map
+            [](auto a, auto b) { return a + b; }); // sum reduce
+    };
+
+    for_each_type(OpWrapper1D { std::move(fn), dst, lhs, lhs }, dst.dtype());
 }
 
 void CPUExecutor::matmul(const Tensor& lhs, const Tensor& rhs, Tensor& dst)

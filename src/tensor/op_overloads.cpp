@@ -137,6 +137,11 @@ Tensor mm(const Tensor& lhs, const Tensor& rhs)
     }
 }
 
+Tensor sum(const Tensor& lhs)
+{
+    return SumOp::apply({ lhs })[0];
+}
+
 // we need to solve that const incorrectness thing;
 // shallow copying const tensor allows to modifying parent tensor contents
 // but i think it's not possible without killing whole shallow copy thing
@@ -170,5 +175,4 @@ Tensor neg(const Tensor& lhs)
 {
     return NegOp::apply({ lhs })[0];
 }
-
 }

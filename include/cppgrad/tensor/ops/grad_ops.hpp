@@ -70,6 +70,14 @@ struct NegOp : autograd::CustomNode<NegOp> {
     tensor_list backward(const Tensor& prev_grad) override;
 };
 
+struct SumOp : autograd::CustomNode<SumOp> {
+    tensor_list forward(tensor_list inputs) override;
+    tensor_list backward(const Tensor& prev_grad) override;
+
+private:
+    std::vector<size_t> _saved_shape;
+};
+
 }
 
 #endif

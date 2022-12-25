@@ -56,10 +56,10 @@ void CUDAExecutor::fill(Tensor& tensor, std::byte* value)
     for_each_type(OpWrapper1D { std::move(fn), tensor, tensor, tensor }, tensor.dtype());
 }
 
-void CUDAExecutor::sum(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
+void CUDAExecutor::add(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 {
     auto fn = [](auto out, auto p1, auto p2) {
-        CPPGRAD_CUDA_LAUNCH(sum_kernel, out.size())
+        CPPGRAD_CUDA_LAUNCH(add_kernel, out.size())
         (p1, p2, out);
     };
 
@@ -109,16 +109,27 @@ void CUDAExecutor::pow(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 void CUDAExecutor::dot(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 {
     auto fn = [](auto out, auto p1, auto p2) {
-        using Type = typename decltype(out)::Type;
-
-        CPPGRAD_CUDA_LAUNCH(dot_kernel, p1.size())
-        (p1, p2, out);
+        CPPGRAD_CUDA_LAUNCH(reduce_kernel, p1.size())
+        (p1, p2, out, DotReduceTag {});
     };
 
     // we'll use that in incorrect way
     cudaMemset(dst.data(), 0, dst.nbytes());
 
     for_each_type(OpWrapper1D { std::move(fn), dst, lhs, rhs }, dst.dtype());
+}
+
+void CUDAExecutor::sum(const Tensor& lhs, Tensor& dst)
+{
+    auto fn = [](auto out, auto p1, auto p2) {
+        CPPGRAD_CUDA_LAUNCH(reduce_kernel, p1.size())
+        (p1, p2, out, SumReduceTag {});
+    };
+
+    // we'll use that in incorrect way
+    cudaMemset(dst.data(), 0, dst.nbytes());
+
+    for_each_type(OpWrapper1D { std::move(fn), dst, lhs, lhs }, dst.dtype());
 }
 
 void CUDAExecutor::matmul(const Tensor& lhs, const Tensor& rhs, Tensor& dst)

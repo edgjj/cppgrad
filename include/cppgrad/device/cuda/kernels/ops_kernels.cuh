@@ -7,6 +7,9 @@
 
 namespace cppgrad::impl {
 
+struct DotReduceTag { };
+struct SumReduceTag { };
+
 template <typename T>
 __global__ void strided_copy_kernel(ConstStridedSpan<T> p1, StridedSpan<T> out)
 {
@@ -26,7 +29,7 @@ __global__ void fill_kernel(StridedSpan<T> out, T val)
 }
 
 template <typename T>
-__global__ void sum_kernel(ConstStridedSpan<T> p1, ConstStridedSpan<T> p2, StridedSpan<T> out)
+__global__ void add_kernel(ConstStridedSpan<T> p1, ConstStridedSpan<T> p2, StridedSpan<T> out)
 {
     CPPGRAD_CUDA_1D_LOOP(i, out.size())
     {
@@ -76,22 +79,28 @@ namespace staticmem {
     __device__ static std::byte block_reduce[impl::CPPGRAD_CUDA_MAX_GRID_SIZE * 16];
 }
 
-template <typename T>
-__global__ void dot_kernel(ConstStridedSpan<T> p1, ConstStridedSpan<T> p2, StridedSpan<T> out)
+template <typename T, typename Tag>
+__global__ void reduce_kernel(ConstStridedSpan<T> p1, ConstStridedSpan<T> p2, StridedSpan<T> out, Tag tag)
 {
     // we assume this kernel is always launched with CPPGRAD_CUDA_NUM_THREADS on block sz
     // 1 kb block shmem
-    __shared__ T block_dot[CPPGRAD_CUDA_NUM_THREADS];
+    __shared__ T block_reduce[CPPGRAD_CUDA_NUM_THREADS];
     T* block_results = reinterpret_cast<T*>(staticmem::block_reduce);
 
     unsigned int local_idx = threadIdx.x;
 
     // zero-init; sdata
-    block_dot[local_idx] = T(0);
+    block_reduce[local_idx] = T(0);
 
+    // local reduction step
     CPPGRAD_CUDA_1D_LOOP(i, p1.size())
     {
-        block_dot[local_idx] += p1[i] * p2[i];
+        // ugly but too lazy to make lambdas work
+        if constexpr (std::is_same_v<Tag, DotReduceTag>) {
+            block_reduce[local_idx] += p1[i] * p2[i];
+        } else if constexpr (std::is_same_v<Tag, SumReduceTag>) {
+            block_reduce[local_idx] += p1[i];
+        }
     }
 
     __syncthreads();
@@ -99,14 +108,14 @@ __global__ void dot_kernel(ConstStridedSpan<T> p1, ConstStridedSpan<T> p2, Strid
     // reduction 1/2
     for (unsigned int i = blockDim.x / 2; i != 0; i >>= 1) { // kernel 3
         if (local_idx < i) {
-            block_dot[local_idx] += block_dot[local_idx + i];
+            block_reduce[local_idx] += block_reduce[local_idx + i];
         }
 
         __syncthreads();
     }
 
     if (local_idx == 0) {
-        block_results[blockIdx.x] = block_dot[0];
+        block_results[blockIdx.x] = block_reduce[0];
     }
 
     if (gridDim.x > 1) {
@@ -126,7 +135,7 @@ __global__ void dot_kernel(ConstStridedSpan<T> p1, ConstStridedSpan<T> p2, Strid
         }
     } else {
         // just copy value to global mem
-        out[0] = block_dot[0];
+        out[0] = block_reduce[0];
     }
 }
 
