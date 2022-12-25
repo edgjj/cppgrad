@@ -24,6 +24,11 @@ namespace autograd {
             _edges = std::move(input_edges);
         }
 
+        void set_no_save(bool new_no_save)
+        {
+            _no_save = new_no_save;
+        }
+
         tensor_list& edges()
         {
             return _edges;
@@ -35,8 +40,7 @@ namespace autograd {
         template <typename... Tensors>
         void save_for_backward(Tensors&&... variables)
         {
-            // bypass save if NoGrad is active
-            if (!ThreadLocalGradState::get()) {
+            if (_no_save) {
                 return;
             }
 
@@ -49,6 +53,7 @@ namespace autograd {
         }
 
     private:
+        bool _no_save{ false };
         tensor_list _saved_data;
         tensor_list _edges;
     };
@@ -63,8 +68,11 @@ namespace autograd {
         static tensor_list apply(tensor_list inputs)
         {
             // check if at least 1 input requires grad; if not - just make pure forward call
-            if (!ThreadLocalGradState::get() || std::find_if(inputs.begin(), inputs.end(), [](auto& t) { return t.requires_grad(); }) == inputs.end()) {
-                return Fn {}.forward(std::move(inputs));
+            if (std::find_if(inputs.begin(), inputs.end(), [](auto& t) { return t.requires_grad(); }) == inputs.end()) {
+                auto fn = Fn{};
+                fn.set_no_save(true);
+
+                return fn.forward(std::move(inputs));
             }
 
             std::shared_ptr<Node> op { new Fn() };

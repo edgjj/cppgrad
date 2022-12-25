@@ -1,51 +1,55 @@
 #include <cppgrad/cppgrad.hpp>
 #include <gtest/gtest.h>
 
+#include <cmath>
+
 using namespace cppgrad;
 
-// TEST(MicrogradInherited, SanityTest)
-// {
-//     auto x = Value(-2.0);
-//     auto z = Value(2.0) * x + Value(2.0) + x;
+TEST(AutogradTests, MicrogradTest1)
+{
+    auto x = Tensor(-2.0);
+    x.set_requires_grad(true);
 
-//     auto h = (z * z).relu();
-//     auto q = z.relu() + z * x;
+    auto z = Tensor(2.0) * x + Tensor(2.0) + x;
 
-//     auto y = h + q + q * x;
-//     // auto y = h + q;
-//     y.backward();
+    auto h = relu(z * z);
+    auto q = relu(z) + z * x;
 
-//     std::cout << "current x grad value: " << x.grad() << '\n';
-//     std::cout << "current y value: " << y.data() << '\n';
+    auto y = h + q + q * x;
+    y.backward();
 
-//     EXPECT_DOUBLE_EQ(x.grad(), -6.0);
-//     EXPECT_DOUBLE_EQ(y.data(), 8.0);
-// }
+    EXPECT_DOUBLE_EQ(x.grad().item<f64>(), -6.0);
+    EXPECT_DOUBLE_EQ(y.item<f64>(), 8.0);
+}
 
-// TEST(MicrogradInherited, MoreOpsTest)
-// {
-//     auto a = Value(-4.0);
-//     auto b = Value(2.0);
-//     auto c = a + b;
-//     auto d = a * b + b.pow(3.0);
-//     c += c + 1.0;
-//     c += 1.0 + c + (-a);
-//     d += d * 2 + (b + a).relu();
-//     d += 3.0 * d + (b - a).relu();
-//     auto e = c - d;
-//     auto f = e.pow(2);
-//     auto g = f / 2.0;
-//     g += 10.0 / f;
+TEST(AutogradTests, MicrogradTest2)
+{
+    auto a = Tensor(-4.0);
+    auto b = Tensor(2.0);
+    a.set_requires_grad(true);
+    b.set_requires_grad(true);
 
-//     g.backward();
+    auto c = a + b;
+    auto d = a * b + pow(b, 3.0); 
+    c += c + 1.0;
 
-//     EXPECT_NEAR(a.grad(), 138.8338192419825, 1e-8);
-//     EXPECT_NEAR(b.grad(), 645.5772594752186, 1e-8);
-//     EXPECT_NEAR(c.grad(), -6.941690962099126, 1e-8);
+    c += 1.0 + c + (-a);
+    d += d * 2.0 + relu(b + a);
+    d += 3.0 * d + relu(b - a);
+    auto e = c - d;
+    auto f = pow(e, 2.0);
+    auto g = f / 2.0;
+    g += 10.0 / f;
 
-//     EXPECT_NEAR(c.data(), -1.0, 1e-8);
-//     EXPECT_NEAR(d.data(), 6.0, 1e-8);
-//     EXPECT_NEAR(e.data(), -7.0, 1e-8);
-//     EXPECT_NEAR(f.data(), 49.0, 1e-8);
-//     EXPECT_NEAR(g.data(), 24.70408163265306, 1e-8);
-// }
+    g.backward();
+
+    EXPECT_NEAR(a.grad().item<f64>(), 138.8338192419825, 1e-8);
+    EXPECT_NEAR(b.grad().item<f64>(), 645.5772594752186, 1e-8);
+    EXPECT_NEAR(c.grad().item<f64>(), -6.941690962099126, 1e-8);
+
+    EXPECT_NEAR(c.item<f64>(), -1.0, 1e-8);
+    EXPECT_NEAR(d.item<f64>(), 6.0, 1e-8);
+    EXPECT_NEAR(e.item<f64>(), -7.0, 1e-8);
+    EXPECT_NEAR(f.item<f64>(), 49.0, 1e-8);
+    EXPECT_NEAR(g.item<f64>(), 24.70408163265306, 1e-8);
+}

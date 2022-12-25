@@ -311,6 +311,7 @@ public:
 
     /**
      * @brief Returns a new Tensor, having same data, but located on CUDA device.
+     * Note: this is not-differentiable, wanishes grad history.
      *
      * @return Tensor
      */
@@ -318,6 +319,7 @@ public:
 
     /**
      * @brief Returns a new Tensor, having same data, but located on CPU memory.
+     * Note: this is not-differentiable, wanishes grad history.
      *
      * @return Tensor
      */
@@ -325,6 +327,7 @@ public:
 
     /**
      * @brief Clones a Tensor.
+     * Note: this is not-differentiable, wanishes grad history.
      *
      * @return Tensor
      */
@@ -332,6 +335,7 @@ public:
 
     /**
      * @brief Makes new Tensor from current, with data stored contiguous
+     * Note: this is not-differentiable, wanishes grad history.
      *
      * @return Tensor
      */

@@ -40,9 +40,7 @@ Tensor& operator+=(Tensor& lhs, const Tensor& rhs)
     check_op_generic(lhs, rhs);
     check_op_elementwise(lhs, rhs);
 
-    auto lhs_out = lhs.requires_grad() ? lhs.clone() : lhs;
-    lhs = AddOp::apply({ lhs_out, rhs })[0];
-
+    lhs = AddOp::apply({ lhs, rhs })[0];
     return lhs;
 }
 
@@ -51,9 +49,7 @@ Tensor& operator-=(Tensor& lhs, const Tensor& rhs)
     check_op_generic(lhs, rhs);
     check_op_elementwise(lhs, rhs);
 
-    auto lhs_out = lhs.requires_grad() ? lhs.clone() : lhs;
-    lhs = SubOp::apply({ lhs_out, rhs })[0];
-
+    lhs = SubOp::apply({ lhs, rhs })[0];
     return lhs;
 }
 
@@ -62,9 +58,7 @@ Tensor& operator*=(Tensor& lhs, const Tensor& rhs)
     check_op_generic(lhs, rhs);
     check_op_elementwise(lhs, rhs);
 
-    auto lhs_out = lhs.requires_grad() ? lhs.clone() : lhs;
-    lhs = MultiplyOp::apply({ lhs_out, rhs })[0];
-
+    lhs = MultiplyOp::apply({ lhs, rhs })[0];
     return lhs;
 }
 
@@ -73,9 +67,7 @@ Tensor& operator/=(Tensor& lhs, const Tensor& rhs)
     check_op_generic(lhs, rhs);
     check_op_elementwise(lhs, rhs);
 
-    auto lhs_out = lhs.requires_grad() ? lhs.clone() : lhs;
-    lhs = DivisionOp::apply({ lhs_out, rhs })[0];
-
+    lhs = DivisionOp::apply({ lhs, rhs })[0];
     return lhs;
 }
 
@@ -84,7 +76,7 @@ Tensor operator+(const Tensor& lhs, const Tensor& rhs)
     check_op_generic(lhs, rhs);
     check_op_elementwise(lhs, rhs);
 
-    return AddOp::apply({ lhs.clone(), rhs })[0];
+    return AddOp::apply({ lhs, rhs })[0];
 }
 
 Tensor operator-(const Tensor& lhs, const Tensor& rhs)
@@ -92,7 +84,7 @@ Tensor operator-(const Tensor& lhs, const Tensor& rhs)
     check_op_generic(lhs, rhs);
     check_op_elementwise(lhs, rhs);
 
-    return SubOp::apply({ lhs.clone(), rhs })[0];
+    return SubOp::apply({ lhs, rhs })[0];
 }
 
 Tensor operator*(const Tensor& lhs, const Tensor& rhs)
@@ -100,7 +92,7 @@ Tensor operator*(const Tensor& lhs, const Tensor& rhs)
     check_op_generic(lhs, rhs);
     check_op_elementwise(lhs, rhs);
 
-    return MultiplyOp::apply({ lhs.clone(), rhs })[0];
+    return MultiplyOp::apply({ lhs, rhs })[0];
 }
 
 Tensor operator/(const Tensor& lhs, const Tensor& rhs)
@@ -108,7 +100,12 @@ Tensor operator/(const Tensor& lhs, const Tensor& rhs)
     check_op_generic(lhs, rhs);
     check_op_elementwise(lhs, rhs);
 
-    return DivisionOp::apply({ lhs.clone(), rhs })[0];
+    return DivisionOp::apply({ lhs, rhs })[0];
+}
+
+Tensor operator-(const Tensor& lhs)
+{
+    return neg(lhs);
 }
 
 Tensor pow(const Tensor& lhs, const Tensor& rhs)
@@ -116,7 +113,7 @@ Tensor pow(const Tensor& lhs, const Tensor& rhs)
     check_op_generic(lhs, rhs);
     check_op_elementwise(lhs, rhs);
 
-    return PowOp::apply({ lhs.clone(), rhs })[0];
+    return PowOp::apply({ lhs, rhs })[0];
 }
 
 Tensor mm(const Tensor& lhs, const Tensor& rhs)
@@ -133,12 +130,10 @@ Tensor mm(const Tensor& lhs, const Tensor& rhs)
             exceptions::GenericError,
             "LHS cols size not eq to RHS rows");
 
-        auto out = Tensor::create_dirty({ lhs.shape()[0], rhs.shape()[1] }, lhs.dtype(), lhs.get_align(), lhs.device().clone());
-        return MatmulOp::apply({ out, lhs, rhs })[0];
+        return MatmulOp::apply({ lhs, rhs })[0];
     } else {
         check_op_elementwise(lhs, rhs);
-        auto out = Tensor::create_dirty({ 1 }, lhs.dtype(), lhs.get_align(), lhs.device().clone());
-        return DotProductOp::apply({ out, lhs, rhs })[0];
+        return DotProductOp::apply({ lhs, rhs })[0];
     }
 }
 
@@ -146,34 +141,34 @@ Tensor mm(const Tensor& lhs, const Tensor& rhs)
 // shallow copying const tensor allows to modifying parent tensor contents
 // but i think it's not possible without killing whole shallow copy thing
 
-Tensor log(Tensor& lhs)
+Tensor log(const Tensor& lhs)
 {
-    return LogOp::apply({ lhs.requires_grad() ? lhs.clone() : lhs })[0]; // clone if requires grad; ugly boilerplate
+    return LogOp::apply({ lhs })[0];
 }
 
-Tensor exp(Tensor& lhs)
+Tensor exp(const Tensor& lhs)
 {
-    return ExpOp::apply({ lhs.requires_grad() ? lhs.clone() : lhs })[0];
+    return ExpOp::apply({ lhs })[0];
 }
 
-Tensor relu(Tensor& lhs)
+Tensor relu(const Tensor& lhs)
 {
-    return ReluOp::apply({ lhs.requires_grad() ? lhs.clone() : lhs })[0];
+    return ReluOp::apply({ lhs })[0];
 }
 
-Tensor tanh(Tensor& lhs)
+Tensor tanh(const Tensor& lhs)
 {
-    return TanhOp::apply({ lhs.requires_grad() ? lhs.clone() : lhs })[0];
+    return TanhOp::apply({ lhs })[0];
 }
 
-Tensor sign(Tensor& lhs)
+Tensor sign(const Tensor& lhs)
 {
-    return SignOp::apply({ lhs.requires_grad() ? lhs.clone() : lhs })[0];
+    return SignOp::apply({ lhs })[0];
 }
 
-Tensor neg(Tensor& lhs)
+Tensor neg(const Tensor& lhs)
 {
-    return NegOp::apply({ lhs.requires_grad() ? lhs.clone() : lhs })[0];
+    return NegOp::apply({ lhs })[0];
 }
 
 }
