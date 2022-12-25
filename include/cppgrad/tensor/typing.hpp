@@ -16,7 +16,7 @@ enum DType {
     i64,
     f32,
     f64,
-    undefined = 0xFFFF
+    undefined
 };
 
 namespace impl {
