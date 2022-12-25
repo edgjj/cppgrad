@@ -168,43 +168,46 @@ public:
     Tensor();
 
     template <typename Type, std::enable_if_t<std::is_arithmetic_v<Type>>* = nullptr>
-    Tensor(Type value, DType dtype = DType::undefined)
+    Tensor(Type value)
     {
-        // autocast
-        if (dtype != DType::undefined) {
-            for_each_type(
-                [&, value](auto tag) {
-                    using CastedType = decltype(tag);
+        *this = create<rtype_v<Type>>({ 1 }, value);
+    }
 
-                    *this = create<rtype_v<CastedType>>({ 1 }, CastedType(value));
-                },
-                dtype);
-        } else {
-            *this = create<rtype_v<Type>>({ 1 }, value);
-        }
+    template <typename Type, std::enable_if_t<std::is_arithmetic_v<Type>>* = nullptr>
+    Tensor(Type value, DType dtype)
+    {
+        for_each_type(
+            [&, value](auto tag) {
+                using CastedType = decltype(tag);
+
+                *this = create<rtype_v<CastedType>>({ 1 }, CastedType(value));
+            },
+            dtype);
     }
 
     template <typename Type>
-    Tensor(std::initializer_list<Type> values, DType dtype = DType::undefined)
+    Tensor(std::initializer_list<Type> values)
     {
-        if (dtype != DType::undefined) {
-            for_each_type(
-                [&, values](auto tag) {
-                    using CastedType = decltype(tag);
+        *this = from_blob<rtype_v<Type>>(const_cast<Type*>(values.begin()),
+            { values.size() });
+    }
 
-                    std::vector<CastedType> imr_vector;
+    template <typename Type>
+    Tensor(std::initializer_list<Type> values, DType dtype)
+    {
+        for_each_type(
+            [&, values](auto tag) {
+                using CastedType = decltype(tag);
 
-                    for (auto& v : values) {
-                        imr_vector.push_back(v);
-                    }
+                std::vector<CastedType> imr_vector;
 
-                    *this = from_blob<rtype_v<CastedType>>(imr_vector.data(), { imr_vector.size() });
-                },
-                dtype);
-        } else {
-            *this = from_blob<rtype_v<Type>>(const_cast<Type*>(values.begin()),
-                { values.size() });
-        }
+                for (auto& v : values) {
+                    imr_vector.push_back(v);
+                }
+
+                *this = from_blob<rtype_v<CastedType>>(imr_vector.data(), { imr_vector.size() });
+            },
+            dtype);
     }
 
     Tensor(std::initializer_list<Tensor> values);

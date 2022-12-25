@@ -16,12 +16,12 @@ enum DType {
     i64,
     f32,
     f64,
-    undefined
+    undefined = 0xFFFF
 };
 
 namespace impl {
 
-    using TypesTuple = std::tuple<uint32_t, uint64_t, int32_t, int64_t, float, double, void*>;
+    using TypesTuple = std::tuple<uint32_t, uint64_t, int32_t, int64_t, float, double>;
 
     template <DType T>
     struct Type {
