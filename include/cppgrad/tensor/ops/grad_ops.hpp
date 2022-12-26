@@ -60,6 +60,11 @@ struct TanhOp : autograd::CustomNode<TanhOp> {
     tensor_list backward(const Tensor& prev_grad) override;
 };
 
+struct SigmoidOp : autograd::CustomNode<SigmoidOp> {
+    tensor_list forward(tensor_list inputs) override;
+    tensor_list backward(const Tensor& prev_grad) override;
+};
+
 struct SignOp : autograd::CustomNode<SignOp> {
     tensor_list forward(tensor_list inputs) override;
     tensor_list backward(const Tensor& prev_grad) override;

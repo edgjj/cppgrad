@@ -24,6 +24,7 @@ Tensor log(const Tensor& lhs);
 Tensor exp(const Tensor& lhs);
 Tensor relu(const Tensor& lhs);
 Tensor tanh(const Tensor& lhs);
+Tensor sigmoid(const Tensor& lhs);
 Tensor sign(const Tensor& lhs);
 Tensor neg(const Tensor& lhs);
 

@@ -21,10 +21,6 @@ namespace {
         CPPGRAD_CHECK_EQ(lhs.device().type(), rhs.device().type(),
             exceptions::GenericError,
             "Device type mismatch");
-
-        CPPGRAD_CHECK_EQ(lhs.get_align(), rhs.get_align(),
-            exceptions::GenericError,
-            "Tensors alignment mismatch");
     }
 
     void check_op_elementwise(const Tensor& lhs, const Tensor& rhs)
@@ -168,6 +164,11 @@ Tensor relu(const Tensor& lhs)
 Tensor tanh(const Tensor& lhs)
 {
     return TanhOp::apply({ lhs })[0];
+}
+
+Tensor sigmoid(const Tensor& lhs)
+{
+    return SigmoidOp::apply({ lhs })[0];
 }
 
 Tensor sign(const Tensor& lhs)

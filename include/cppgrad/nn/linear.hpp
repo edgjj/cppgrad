@@ -8,7 +8,7 @@ namespace cppgrad::nn {
 
 struct Linear : Module {
 
-    Linear(size_t in_size, size_t out_size, bool needs_bias = true);
+    Linear(size_t in_size, size_t out_size, DType dtype = DType::f32, bool needs_bias = true);
 
     tensor_list forward(tensor_list inputs) override;
     tensor_ptr_list get_parameters() override;

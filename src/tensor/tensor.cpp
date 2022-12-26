@@ -15,12 +15,7 @@ void Tensor::checked_copy(const Tensor& from, Tensor& to)
     // set strides to match, can't do strided copy there
     to._storage->_strides = from._storage->_strides;
 
-    size_t n_bytes = 0;
-    if (!from.empty() && from._storage->_strides.size() == 1 && from._storage->_strides[0] == 0) {
-        n_bytes = dtype_size(from.dtype());
-    } else {
-        n_bytes = from.nbytes();
-    }
+    size_t n_bytes = from.nbytes();
 
     if (from.device().type() == to.device().type()) { // homogeneous
         from.executor().copy(from.data(), to.data(), n_bytes);
@@ -55,7 +50,7 @@ Tensor Tensor::create_dirty(std::vector<size_t> shape,
 Tensor& Tensor::operator=(const Tensor& other)
 {
     // just return shallow copy for empty case / not views
-    if (empty() || !is_view() && !other.is_view()) {
+    if (empty() || !is_view() && !other.is_view() || is_loop() && other.is_loop()) {
         _storage = other._storage;
         _base = other._base;
         return *this;
@@ -85,7 +80,7 @@ Tensor& Tensor::operator=(const Tensor& other)
 Tensor& Tensor::operator=(Tensor&& other)
 {
     // just move if empty or both are not views
-    if (empty() || !is_view() && !other.is_view()) {
+    if (empty() || !is_view() && !other.is_view() || is_loop() && other.is_loop()) {
         _storage = std::move(other._storage);
         _base = std::move(other._base);
         return *this;
@@ -212,6 +207,10 @@ size_t Tensor::numel() const noexcept
 
 size_t Tensor::nbytes() const noexcept
 {
+    if (is_loop()) {
+        return dtype_size(dtype());
+    }
+
     return numel() * dtype_size(dtype());
 }
 
@@ -362,6 +361,11 @@ bool Tensor::is_contiguous() const
 
     // second condition required for 1dim tensors mostly
     return std::is_sorted(strides().rbegin(), strides().rend()) && *strides().rbegin() == dtype_size(dtype());
+}
+
+bool Tensor::is_loop() const
+{
+    return !empty() && _storage->_strides.size() == 1 && _storage->_strides[0] == 0;
 }
 
 size_t Tensor::get_align() const

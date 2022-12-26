@@ -260,8 +260,8 @@ tensor_list ReluOp::backward(const Tensor& prev_grad)
     auto& out = saved()[0];
     auto grad = prev_grad.clone();
 
-    out.executor().sign(out, out);
-    grad.executor().mul(out, grad, grad);
+    grad.executor().sign(out, grad);
+    grad.executor().mul(prev_grad, grad, grad);
 
     return { grad }; // (x > 0) * prev_grad -> sign(out) * prev_grad
 }
@@ -287,6 +287,36 @@ tensor_list TanhOp::backward(const Tensor& prev_grad)
     x.executor().mul(x, grad, x); // tanh^2(x) * g
 
     grad.executor().sub(grad, x, grad); // g - g * tanh^2(x)
+
+    return { grad };
+}
+
+// SigmoidOp; THIS LITTLE BOY SCREWES GRADIENT UP!!! incorrect somewhere
+tensor_list SigmoidOp::forward(tensor_list inputs)
+{
+    auto& x = inputs[0];
+    auto out = x.clone();
+    auto one = Tensor(1, out.dtype()).loop(out.shape());
+    one = out.is_cuda_tensor() ? one.cuda() : one;
+
+    out.executor().neg(out, out);
+    out.executor().exp(out, out);
+
+    out.executor().add(one, out, out);
+    out.executor().div(one, out, out);
+
+    save_for_backward(out);
+
+    return { out };
+}
+
+tensor_list SigmoidOp::backward(const Tensor& prev_grad)
+{
+    auto& out = saved()[0];
+    auto grad = prev_grad.clone(); // 1 - tanh(x) * tanh(x)
+
+    grad.executor().mul(out, out, grad); // sigma_x^2
+    grad.executor().sub(out, grad, grad); // sigma_x - sigma_x^2 -> sigma_x(1 - sigma_x);
 
     return { grad };
 }

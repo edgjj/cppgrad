@@ -239,3 +239,21 @@ TEST(AutogradTest, MatmulSumMSETest)
     EXPECT_NEAR(b.grad()(0, 0).item<f64>(), 22.215999258500, 1e-4);
     EXPECT_NEAR(b.grad()(0, 1).item<f64>(), 162.245988260362, 1e-4);
 }
+
+TEST(AutogradTests, SigmoidTest)
+{
+    auto a = Tensor { 0.4f, 0.6f };
+    auto b = Tensor { 0.21f, 0.01f };
+    a.set_requires_grad(true);
+    b.set_requires_grad(true);
+
+    auto c = cppgrad::mm(a, b);
+    c = cppgrad::sigmoid(c);
+
+    c.backward();
+
+    EXPECT_NEAR(a.grad()(0).item<f32>(), 0.0523938276f, 1e-6);
+    EXPECT_NEAR(a.grad()(1).item<f32>(), 0.0024949443f, 1e-6);
+    EXPECT_NEAR(b.grad()(0).item<f32>(), 0.0997977778f, 1e-6);
+    EXPECT_NEAR(b.grad()(1).item<f32>(), 0.1496966630f, 1e-6);
+}

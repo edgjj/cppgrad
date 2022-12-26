@@ -4,20 +4,20 @@
 
 namespace cppgrad::nn {
 
-Linear::Linear(size_t in_size, size_t out_size, bool needs_bias)
+Linear::Linear(size_t in_size, size_t out_size, DType dtype, bool needs_bias)
 {
     if (in_size == 0 || out_size == 0) {
         throw exceptions::GenericError("Invalid sizes specified for Linear layer.");
     }
 
-    _w = Tensor::create<f32>({ out_size, in_size }, 1.0f);
-    _w.random_fill(-0.25, 0.25);
+    _w = Tensor::create_dirty({ out_size, in_size }, dtype, 8, new CPU());
+    _w.random_fill(-0.1, 0.1);
 
     _w.set_requires_grad(true);
 
     if (needs_bias) {
-        _b = Tensor::create<f32>({ out_size }, 1.0f);
-        _b.random_fill(-0.25, 0.25);
+        _b = Tensor::create_dirty({ out_size }, dtype, 8, new CPU());
+        _b.random_fill(-0.1, 0.1);
 
         _b.set_requires_grad(true);
     }
@@ -29,7 +29,7 @@ tensor_list Linear::forward(tensor_list inputs)
     auto y_hat = cppgrad::mm(x, _w.T());
 
     if (!_b.empty()) {
-        y_hat += _b;
+        y_hat = y_hat + _b;
     }
 
     return { y_hat };

@@ -422,6 +422,14 @@ public:
     bool is_contiguous() const;
 
     /**
+     * @brief Tells is Tensor is a loop
+     *
+     * @return true
+     * @return false
+     */
+    bool is_loop() const;
+
+    /**
      * @brief Get alignment of current Tensor
      *
      * @return size_t

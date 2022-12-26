@@ -4,6 +4,7 @@
 #include <iostream>
 #include <random>
 #include <vector>
+#include <chrono>
 
 #include "deps/stb_image.h"
 
@@ -12,16 +13,24 @@ using namespace cppgrad;
 template <DType DataType>
 void print_tensor(const Tensor& data)
 {
-    std::cout << std::setprecision(8);
+    std::cout << std::setprecision(4);
     if (data.shape().size() > 1) {
         for (size_t k = 0; k < data.shape()[0]; k++) {
             print_tensor<DataType>(data[k]);
         }
     } else {
         std::cout << "[ ";
-        for (size_t k = 0; k < data.numel(); k++) {
+        size_t max_size = 10;
+        size_t size = data.numel() > max_size ? max_size : data.numel();
+
+        for (size_t k = 0; k < size; k++) {
             std::cout << (double)data[k].item<DataType>() << ' ';
         }
+
+        if (data.numel() > max_size) {
+            std::cout << " ... ";
+        }
+
         std::cout << " ]" << std::endl;
     }
 }
@@ -35,7 +44,10 @@ struct LinearNN : nn::Module {
         , fc2(256, 64)
         , fc3(64, 10)
     {
+        // module reg is important !
         register_module(fc1);
+        register_module(fc2);
+        register_module(fc3);
     }
 
     nn::tensor_list forward(nn::tensor_list inputs) override
@@ -43,10 +55,11 @@ struct LinearNN : nn::Module {
         auto y = fc1(inputs);
         y = fc2(cppgrad::relu(y[0]));
         y = fc3(cppgrad::relu(y[0]));
-        return { cppgrad::tanh(y[0]) };
+        //return { cppgrad::sigmoid(y[0]) };
+        return y; // sigmoid is broken at this moment
     }
 
-private:
+//private:
     nn::Linear fc1;
     nn::Linear fc2;
     nn::Linear fc3;
@@ -57,19 +70,27 @@ int main()
     try {
         autograd::ForceGradGuard guard;
 
-        auto t1 = Tensor::create<f32>({ 1, MNIST_W * MNIST_H }, 1.0f);
-        t1.random_fill();
-
-        auto y = Tensor { { 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f } };
+        auto x = Tensor::create<f32>({ 1, MNIST_W * MNIST_H }, 0.5f);
+        auto y = Tensor { { 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f } };
 
         LinearNN nn;
         nn::optim::SGD optim(nn, 1e-2);
+        
         // nn.cuda() switches all params to CUDA
+#ifdef CPPGRAD_HAS_CUDA
+        x = x.cuda();
+        y = y.cuda();
+        nn.cuda();
+#endif
 
-        constexpr size_t n_steps = 150;
+        constexpr size_t n_steps = 20000;
+
+        auto start = std::chrono::high_resolution_clock::now();
+        auto end = std::chrono::high_resolution_clock::now();
+
         for (size_t k = 0; k < n_steps; k++) {
 
-            auto output = nn(t1)[0];
+            auto output = nn(x)[0];
             auto loss = nn::mse_loss(output, y);
 
             optim.zero_grad();
@@ -77,14 +98,22 @@ int main()
             loss.backward();
             optim.step();
 
-            std::cout << "Output: ";
-            print_tensor<f32>(output);
+            if (k % 100 == 0) {
+                end = std::chrono::high_resolution_clock::now();
+                std::chrono::duration<double, std::milli> run_ms = end - start;
+                start = end;
 
-            std::cout << "Loss: ";
-            print_tensor<f32>(loss);
+                std::cout << "Time per 500 steps: " << run_ms.count() << std::endl;
 
-            std::cout << "Real Y: ";
-            print_tensor<f32>(y);
+                std::cout << "Output: ";
+                print_tensor<f32>(output);
+
+                std::cout << "Loss: ";
+                print_tensor<f32>(loss);
+
+                std::cout << "Real Y: ";
+                print_tensor<f32>(y);
+            }
         }
 
         return 0;
