@@ -166,9 +166,17 @@ Tensor tanh(const Tensor& lhs)
     return TanhOp::apply({ lhs })[0];
 }
 
+// synthesize from exp
 Tensor sigmoid(const Tensor& lhs)
 {
-    return SigmoidOp::apply({ lhs })[0];
+    auto one = Tensor(1, lhs.dtype()).loop(lhs.shape());
+    one = lhs.is_cuda_tensor() ? one.cuda() : one;
+    // one MUST be rhs; due to it's loop nature
+
+    auto numerator = exp(lhs);
+    auto denominator = numerator + one;
+
+    return numerator / denominator;
 }
 
 Tensor sign(const Tensor& lhs)

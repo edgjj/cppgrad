@@ -1,10 +1,11 @@
 #include <cppgrad/cppgrad.hpp>
 
+#include <chrono>
 #include <iomanip>
 #include <iostream>
 #include <random>
 #include <vector>
-#include <chrono>
+
 
 #include "deps/stb_image.h"
 
@@ -55,11 +56,10 @@ struct LinearNN : nn::Module {
         auto y = fc1(inputs);
         y = fc2(cppgrad::relu(y[0]));
         y = fc3(cppgrad::relu(y[0]));
-        //return { cppgrad::sigmoid(y[0]) };
-        return y; // sigmoid is broken at this moment
+        return { cppgrad::sigmoid(y[0]) };
     }
 
-//private:
+    // private:
     nn::Linear fc1;
     nn::Linear fc2;
     nn::Linear fc3;
@@ -71,11 +71,11 @@ int main()
         autograd::ForceGradGuard guard;
 
         auto x = Tensor::create<f32>({ 1, MNIST_W * MNIST_H }, 0.5f);
-        auto y = Tensor { { 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f } };
+        auto y = Tensor { { 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f } };
 
         LinearNN nn;
-        nn::optim::SGD optim(nn, 1e-2);
-        
+        nn::optim::SGD optim(nn, 5e-3);
+
         // nn.cuda() switches all params to CUDA
 #ifdef CPPGRAD_HAS_CUDA
         x = x.cuda();
@@ -83,7 +83,8 @@ int main()
         nn.cuda();
 #endif
 
-        constexpr size_t n_steps = 20000;
+        constexpr size_t n_steps = 2000;
+        constexpr size_t print_threshold = 250;
 
         auto start = std::chrono::high_resolution_clock::now();
         auto end = std::chrono::high_resolution_clock::now();
@@ -98,21 +99,23 @@ int main()
             loss.backward();
             optim.step();
 
-            if (k % 100 == 0) {
+            if (k != 0 && k % print_threshold == 0) {
                 end = std::chrono::high_resolution_clock::now();
                 std::chrono::duration<double, std::milli> run_ms = end - start;
                 start = end;
 
-                std::cout << "Time per 500 steps: " << run_ms.count() << std::endl;
+                std::cout << "Time per " << print_threshold << " steps: " << run_ms.count() << "ms" << std::endl;
 
                 std::cout << "Output: ";
                 print_tensor<f32>(output);
 
+                std::cout << "Real Y: ";
+                print_tensor<f32>(y);
+
                 std::cout << "Loss: ";
                 print_tensor<f32>(loss);
 
-                std::cout << "Real Y: ";
-                print_tensor<f32>(y);
+                std::cout << std::endl;
             }
         }
 
