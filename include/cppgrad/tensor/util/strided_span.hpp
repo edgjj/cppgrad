@@ -44,6 +44,7 @@ struct StridedSpan {
         // contiguous tensor has reverse-sorted strides
         _stride = std::is_sorted(t.strides().begin(), t.strides().end()) ? *t.strides().begin() : *t.strides().rbegin();
         _stride /= sizeof(T);
+
     }
 
     inline CPPGRAD_CUDA_FN T& operator[](size_t index)

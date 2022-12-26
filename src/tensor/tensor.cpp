@@ -115,7 +115,6 @@ Tensor& Tensor::operator=(Tensor&& other)
 }
 
 Tensor::Tensor()
-// : Tensor(0)
 {
 }
 

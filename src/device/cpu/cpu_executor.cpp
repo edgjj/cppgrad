@@ -21,6 +21,7 @@ void CPUExecutor::copy(const std::byte* from, std::byte* to, std::size_t count, 
 
 void CPUExecutor::strided_copy(const Tensor& from, Tensor& to)
 {
+    // this thing is broken, need to fix
     auto fn = [](auto out, auto p1, auto p2) {
         async::parallel_for(async::irange(0ull, out.size()),
             [&](size_t k) {

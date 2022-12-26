@@ -40,7 +40,7 @@ struct MPIError : std::runtime_error {
 
 // we should do same for CUDA i think
 #define CPPGRAD_MPI_CHECK(op, ...)                      \
-    if (auto code = op(__VA_ARGS__); op != MPI_SUCCESS) \
+    if (auto code = op(__VA_ARGS__); code != MPI_SUCCESS) \
         throw exceptions::MPIError(code, "[ " __FILE__ ":" TO_STRING(__LINE__) " ]");
 
 }

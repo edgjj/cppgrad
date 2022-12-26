@@ -1,6 +1,7 @@
 #ifdef CPPGRAD_HAS_MPI
 
 #include <cppgrad/cppgrad.hpp>
+#include <iomanip>
 #include <iostream>
 
 using namespace cppgrad;
@@ -26,13 +27,37 @@ int main(int argc, char* argv[])
 {
     try {
         // init mpi context
-        distributed::Environment(argc, argv);
+        distributed::Environment env(argc, argv);
         distributed::Communicator world;
 
+        auto tg = Tensor::create<f32>({ 2, 2 });
+        tg.random_fill();
+
+        auto gathered = world.gather(tg, 0);
         if (world.rank() == 0) {
-            std::cout << "I'm 0!" << std::endl;
-        } else {
-            std::cout << "I'm " << world.rank() << std::endl;
+            std::cout << "Gathered Tensor: " << std::endl;
+            print_tensor<f32>(gathered);
+        }
+
+        if (world.size() < 2) {
+            std::cout << "Not enough processes to work, needed at least 2.";
+            return -1;
+        }
+
+        if (world.rank() == 0) {
+            auto t0 = Tensor::create<f32>({ 8, 8 }, 98);
+#ifdef CPPGRAD_HAS_CUDA
+            t0 = t0.cuda(); // test CUDA tensor send
+#endif
+            t0.random_fill();
+            world.send(t0, 1);
+
+            std::cout << "Sent Tensor from process 0 to process 1" << std::endl;
+        } else if (world.rank() == 1) {
+            auto t1 = world.recv(0);
+            std::cout << "Received Tensor from process 0; DType: " << dtype_name(t1.dtype()) << "; device type: " << t1.device().type() << std::endl;
+
+            print_tensor<f32>(t1);
         }
     } catch (std::exception& e) {
         std::cout << e.what() << std::endl;

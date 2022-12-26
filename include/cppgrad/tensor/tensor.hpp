@@ -22,6 +22,9 @@
 #include "cppgrad/autograd/context.hpp"
 #include "cppgrad/autograd/grad_mode.hpp"
 
+// comm
+#include "cppgrad/distributed/comm.hpp"
+
 namespace cppgrad {
 
 /*
@@ -450,7 +453,7 @@ public:
     // these two allow to set strides
     friend struct PermuteOp;
 #ifdef CPPGRAD_HAS_MPI
-    friend struct Communicator;
+    friend class distributed::Communicator;
 #endif
 
 private:

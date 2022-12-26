@@ -4,9 +4,10 @@
 #ifdef CPPGRAD_HAS_MPI
 
 #include "cppgrad/tensor/tensor_fwd.hpp"
-using CommType = int;
 
 namespace cppgrad::distributed {
+
+using CommType = int;
 
 /**
  * @brief MPI Communicator wrapper, allows distributed computing with Tensors.
@@ -31,7 +32,7 @@ struct Communicator {
      * Note: blocking routine.
      * @param tensor
      */
-    void send(const Tensor& tensor, int dest_process, int dest_tag);
+    void send(const Tensor& tensor, int dest_process, int dest_tag = 0);
 
     /**
      * @brief Receives Tensor from given process & tag in communicator
@@ -40,15 +41,16 @@ struct Communicator {
      * @param tensor
      * @return Tensor
      */
-    Tensor recv(int src_process, int src_tag);
+    Tensor recv(int src_process, int src_tag = 0);
 
     /**
-     * @brief Gathers Tensor to root communicator process
+     * @brief Gathers Tensor to root communicator process;
+     * This joins multiple processes Tensors into single one on root processor
      *
      * @param tensor
      * @return Tensor
      */
-    Tensor gather(const Tensor& tensor);
+    Tensor gather(const Tensor& tensor, int root_process);
 
     /**
      * @brief Gathers Tensor along processes in communicator
