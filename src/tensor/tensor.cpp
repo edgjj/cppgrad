@@ -9,6 +9,28 @@
 
 namespace cppgrad {
 
+// util routine for inter-device copies & various clones
+void Tensor::checked_copy(const Tensor& from, Tensor& to)
+{
+    // set strides to match, can't do strided copy there
+    to._storage->_strides = from._storage->_strides;
+
+    size_t n_bytes = 0;
+    if (!from.empty() && from._storage->_strides.size() == 1 && from._storage->_strides[0] == 0) {
+        n_bytes = dtype_size(from.dtype());
+    } else {
+        n_bytes = from.nbytes();
+    }
+
+    if (from.device().type() == to.device().type()) { // homogeneous
+        from.executor().copy(from.data(), to.data(), n_bytes);
+    } else if (from.is_cuda_tensor()) {
+        from.executor().copy(from.data(), to.data(), n_bytes, impl::DeviceToHost);
+    } else {
+        to.executor().copy(from.data(), to.data(), n_bytes, impl::HostToDevice);
+    }
+}
+
 Tensor Tensor::create_dirty(std::vector<size_t> shape,
     DType type,
     size_t alignment,
@@ -233,7 +255,7 @@ bool Tensor::is_cuda_tensor() const
     return false;
 }
 
-Tensor Tensor::cuda()
+Tensor Tensor::cuda() const
 {
     // safe pass if no CUDA devices
     if (is_cuda_tensor() || CUDA::num_devices() == 0) {
@@ -241,7 +263,8 @@ Tensor Tensor::cuda()
     }
 
     auto new_tensor = create_dirty(shape(), dtype(), (size_t)_storage->_alignment, new CUDA());
-    new_tensor.executor().copy(data(), new_tensor.data(), new_tensor.nbytes(), impl::HostToDevice);
+    checked_copy(*this, new_tensor);
+
     if (requires_grad()) {
         new_tensor.set_requires_grad(true);
     }
@@ -249,7 +272,7 @@ Tensor Tensor::cuda()
     return new_tensor;
 }
 
-Tensor Tensor::cpu()
+Tensor Tensor::cpu() const
 {
     // no need in cast
     if (!is_cuda_tensor()) {
@@ -257,7 +280,7 @@ Tensor Tensor::cpu()
     }
 
     auto new_tensor = create_dirty(shape(), dtype(), (size_t)_storage->_alignment, new CPU());
-    executor().copy(data(), new_tensor.data(), new_tensor.nbytes(), impl::DeviceToHost); // use CUDA executor
+    checked_copy(*this, new_tensor);
 
     if (requires_grad()) {
         new_tensor.set_requires_grad(true);
@@ -273,12 +296,12 @@ bool Tensor::is_cuda_tensor() const
     return false;
 }
 
-Tensor Tensor::cpu()
+Tensor Tensor::cpu() const
 {
     return *this;
 }
 
-Tensor Tensor::cuda()
+Tensor Tensor::cuda() const
 {
     return *this;
 }
@@ -287,17 +310,7 @@ Tensor Tensor::cuda()
 Tensor Tensor::clone() const
 {
     auto new_tensor = create_dirty(shape(), dtype(), get_align(), device().clone());
-    // copy strides to be the same
-    new_tensor._storage->_strides = _storage->_strides;
-
-    // this is loop detection basically
-    if (!empty() && _storage->_strides.size() == 1 && _storage->_strides[0] == 0) {
-        // copy exact single element
-        executor().copy(data(), new_tensor.data(), dtype_size(dtype()));
-    } else {
-        executor().copy(data(), new_tensor.data(), nbytes());
-    }
-
+    checked_copy(*this, new_tensor);
     return new_tensor;
 }
 

@@ -36,11 +36,6 @@ file (GLOB
 	include/cppgrad/nn/*.hpp
 )
 
-set(CPPGRAD_DEVICE_INCLUDES 
-	include/cppgrad/device/cpu/cpu.hpp
-	include/cppgrad/device/cuda/cuda.hpp
-)
-
 list(APPEND CPPGRAD_HDR ${CPPGRAD_DEVICE_INCLUDES})
 
 file (GLOB

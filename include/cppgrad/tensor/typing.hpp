@@ -9,7 +9,7 @@
 
 namespace cppgrad {
 
-enum DType {
+enum DType : uint64_t {
     u32,
     u64,
     i32,

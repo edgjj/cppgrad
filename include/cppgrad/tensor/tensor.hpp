@@ -369,7 +369,7 @@ public:
      *
      * @return Tensor
      */
-    Tensor cuda();
+    Tensor cuda() const;
 
     /**
      * @brief Returns a new Tensor, having same data, but located on CPU memory.
@@ -377,7 +377,7 @@ public:
      *
      * @return Tensor
      */
-    Tensor cpu();
+    Tensor cpu() const;
 
     /**
      * @brief Clones a Tensor.
@@ -446,7 +446,12 @@ public:
     ~Tensor();
 
     friend struct std::hash<Tensor>;
+
+    // these two allow to set strides
     friend struct PermuteOp;
+#ifdef CPPGRAD_HAS_MPI
+    friend struct Communicator;
+#endif
 
 private:
     /**
@@ -474,6 +479,8 @@ private:
     std::shared_ptr<impl::TensorData>& base_storage();
 
     const std::shared_ptr<impl::TensorData>& base_storage() const;
+
+    static void checked_copy(const Tensor& from, Tensor& to);
 
     /**
      * @brief Construct a new Tensor object from parent's TensorData.

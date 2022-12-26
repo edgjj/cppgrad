@@ -10,5 +10,7 @@
 #include <cppgrad/nn/module.hpp>
 #include <cppgrad/nn/optim.hpp>
 
+#include <cppgrad/distributed/comm.hpp>
+#include <cppgrad/distributed/guard.hpp>
 
 #endif

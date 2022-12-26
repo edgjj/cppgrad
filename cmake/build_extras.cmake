@@ -4,13 +4,18 @@ file (GLOB
     src/device/cpu/*.cpp
 )
 
+file (GLOB
+    CPU_HDR
+    include/cppgrad/device/cpu/*.hpp
+)
+
 include (cmake/setup_asyncpp.cmake)
 cppgrad_setup_asyncpp()
 
 add_library(cppgrad_cpu_backend 
     STATIC
     ${CPU_SOURCES}
-    ${CPPGRAD_DEVICE_INCLUDES}
+    ${CPU_HDR}
 )
 
 target_include_directories(cppgrad_cpu_backend PRIVATE include/)
@@ -31,10 +36,16 @@ if (CPPGRAD_CUDA)
         src/device/cuda/*.cu
     )
 
+    file (GLOB
+        CUDA_HDR
+        include/cppgrad/device/cuda/*.hpp
+        include/cppgrad/device/cuda/kernels/*.cuh
+    )
+
     add_library(cppgrad_cuda_backend 
         STATIC
         ${CUDA_SOURCES}
-        ${CPPGRAD_DEVICE_INCLUDES}
+        ${CUDA_HDR}
     )
 
     target_include_directories(cppgrad_cuda_backend PRIVATE include/ ${CUDAToolkit_INCLUDE_DIRS})
@@ -69,4 +80,31 @@ if (CPPGRAD_MPI)
     endif()
     
     find_package(MPI REQUIRED)
+
+    add_compile_definitions(CPPGRAD_HAS_MPI)
+    file (GLOB 
+        DISTRIBUTED_SOURCES 
+        src/distributed/*.cpp
+        
+    )
+
+    file (GLOB
+        DISTRIBUTED_HDR
+        include/cppgrad/distributed/*.hpp
+    )
+
+    add_library(cppgrad_distrubuted
+        STATIC
+        ${DISTRIBUTED_SOURCES}
+        ${DISTRIBUTED_HDR}
+        include/cppgrad/exceptions/mpi_error.hpp
+    )
+
+    target_include_directories(cppgrad_distrubuted PRIVATE include/ ${MPI_INCLUDE_PATH})
+	target_link_libraries(cppgrad_distrubuted PRIVATE ${MPI_LIBRARIES})
+
+    list(APPEND 
+        CPPGRAD_INTERNAL_LIBS 
+        cppgrad_distrubuted)
+    
 endif()
