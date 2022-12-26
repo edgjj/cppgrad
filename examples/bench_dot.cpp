@@ -105,7 +105,7 @@ TestResult bench_device(size_t vec_size, size_t n_runs)
 
 int main()
 {
-    std::vector sizes { 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096 };
+    std::vector sizes { 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384 };
     std::cout << "[ bench ] N runs per bench: " << N_RUNS << std::endl;
     std::cout << "[ bench ] Warming up... " << std::endl;
 
