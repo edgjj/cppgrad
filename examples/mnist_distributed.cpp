@@ -49,7 +49,11 @@ struct DistributedSGD {
     void step()
     {
         for (auto& i : _params) {
-            auto lr_tensor = Tensor::create_dirty(i->grad().shape(), i->dtype(), 8, i->device().clone());
+            auto lr_tensor = Tensor::create_dirty(i->grad().shape(),
+                i->dtype(),
+                8,
+                i->device().clone());
+
             lr_tensor.fill(_lr);
 
             auto calculated_change = i->grad() * lr_tensor;
