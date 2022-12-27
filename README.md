@@ -32,9 +32,9 @@ But future is not yet now...
 
 ## Example snippet
 ```
-	using namespace cppgrad;
+    using namespace cppgrad;
 
-	nn::Linear lin(16, 10, f64);
+    nn::Linear lin(16, 10, f64);
     nn::optim::SGD optim(lin, 1e-2);
 
     auto x = Tensor::create<f64>({ { 1, 16 } }, 0.5);
@@ -49,7 +49,7 @@ But future is not yet now...
         optim.step();
     }
 
-	auto out = lin(x)[0];
+    auto out = lin(x)[0];
     auto loss = nn::mse_loss(out, y);
 
     out = lin(x)[0];
