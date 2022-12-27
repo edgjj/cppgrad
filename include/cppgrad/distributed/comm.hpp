@@ -24,7 +24,7 @@ struct Communicator {
      * @param tensor
      * @return Tensor
      */
-    Tensor broadcast(const Tensor& tensor);
+    Tensor broadcast(const Tensor& tensor, int root_process);
 
     /**
      * @brief Sends Tensor to given process & tag in communicator

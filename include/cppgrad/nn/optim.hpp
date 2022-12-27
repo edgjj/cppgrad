@@ -28,7 +28,7 @@ struct SGD {
     {
         // sets grads to nothing
         for (auto& i : _params) {
-            i->grad() = Tensor();
+            (*i) = (*i); // this efficiently washes grad
         }
     }
 

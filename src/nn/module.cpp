@@ -21,7 +21,7 @@ tensor_ptr_list Module::get_parameters()
 
 void Module::register_module(Module& new_child)
 {
-    _child.insert(&new_child);
+    _child.push_back(&new_child);
 }
 
 void Module::cpu()

@@ -18,7 +18,7 @@ struct CUDAAllocatorWrapper {
 
 private:
     CUDAAllocatorWrapper()
-        : _allocator(8, // bin growth
+        : _allocator(9, // bin growth
             3, // min bins
             9, // max bin
             1 << 28) // max cached bytes

@@ -35,6 +35,55 @@ void print_tensor(const Tensor& data)
     }
 }
 
+template <typename Net>
+struct DistributedSGD {
+    DistributedSGD(Net& net, distributed::Communicator& comm, double learning_rate)
+        : _lr(learning_rate)
+        , _comm(comm)
+    {
+        _params = net.get_parameters();
+    }
+
+    void step()
+    {
+        for (auto& i : _params) {
+            auto lr_tensor = Tensor::create_dirty(i->grad().shape(), i->dtype(), 8, i->device().clone());
+            lr_tensor.fill(_lr);
+
+            auto calculated_change = i->grad() * lr_tensor;
+            auto gathered_change = _comm.gather(calculated_change, 0);
+
+            if (_comm.rank() == 0) {
+                // iterate over gathered list
+                for (size_t k = 0; k < _comm.size(); k++) {
+                    (*i) -= gathered_change[k];
+                }
+            }
+
+            auto bcasted = *i;
+            (*i) = Tensor();
+            (*i) = _comm.broadcast(bcasted, 0);
+
+            // restore state
+            i->set_requires_grad(true);
+        }
+    }
+
+    void zero_grad()
+    {
+        // sets grads to nothing
+        for (auto& i : _params) {
+            (*i) = (*i);
+        }
+    }
+
+private:
+    distributed::Communicator& _comm;
+
+    nn::tensor_ptr_list _params;
+    double _lr { 0.0 };
+};
+
 #define MNIST_W 28
 #define MNIST_H 28
 
@@ -64,14 +113,17 @@ struct LinearNN : nn::Module {
     nn::Linear fc3;
 };
 
-int main()
+int main(int argc, char* argv[])
 {
     try {
+        distributed::Environment env(argc, argv);
+        distributed::Communicator world;
+
         auto x = Tensor::create<f32>({ 1, MNIST_W * MNIST_H }, 0.5f);
         auto y = Tensor { { 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f } };
 
         LinearNN nn;
-        nn::optim::SGD optim(nn, 5e-3);
+        DistributedSGD optim(nn, world, 1e-4);
 
         // nn.cuda() switches all params to CUDA
 #ifdef CPPGRAD_HAS_CUDA
@@ -81,7 +133,7 @@ int main()
 #endif
 
         constexpr size_t n_steps = 50000;
-        constexpr size_t print_threshold = 250;
+        constexpr size_t print_threshold = 125;
 
         auto start = std::chrono::high_resolution_clock::now();
         auto end = std::chrono::high_resolution_clock::now();
@@ -94,9 +146,11 @@ int main()
             optim.zero_grad();
 
             loss.backward();
-            //optim.step();
+            optim.step();
 
-            if (k != 0 && k % print_threshold == 0) {
+            if (k != 0 && k % print_threshold == 0 && world.rank() == 0) {
+                std::cout << "Metrics @ " << world.rank() << std::endl;
+
                 end = std::chrono::high_resolution_clock::now();
                 std::chrono::duration<double, std::milli> run_ms = end - start;
                 start = end;

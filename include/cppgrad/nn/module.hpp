@@ -3,7 +3,7 @@
 
 #include "cppgrad/device/device.hpp"
 #include "cppgrad/tensor/tensor_fwd.hpp"
-#include <unordered_set>
+#include <vector>
 
 namespace cppgrad::nn {
 
@@ -34,7 +34,7 @@ struct Module {
     virtual ~Module();
 
 private:
-    std::unordered_set<Module*> _child;
+    std::vector<Module*> _child;
     Module* _parent;
 };
 

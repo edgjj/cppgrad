@@ -39,15 +39,35 @@ Communicator::~Communicator()
     }
 }
 
-Tensor Communicator::broadcast(const Tensor& tensor)
+Tensor Communicator::broadcast(const Tensor& tensor, int root_process)
 {
-    return Tensor();
+    auto cpu_tensor = tensor.cpu();
+    cpu_tensor.set_requires_grad(false);
+
+    auto shape_size = cpu_tensor.shape().size();
+    uint64_t metadata[3] = { shape_size, cpu_tensor.dtype(), tensor.is_cuda_tensor() };
+
+    CPPGRAD_MPI_CHECK(MPI_Bcast, metadata, 3, MPI_UINT64_T, root_process, _comm);
+    // alloc shape/strides
+    std::vector<size_t> recv_shape(cpu_tensor.shape()), recv_strides(cpu_tensor._storage->_strides);
+    bool is_cuda = metadata[2];
+
+    CPPGRAD_MPI_CHECK(MPI_Bcast, recv_shape.data(), metadata[0], MPI_UINT64_T, root_process, _comm);
+    CPPGRAD_MPI_CHECK(MPI_Bcast, recv_strides.data(), metadata[0], MPI_UINT64_T, root_process, _comm);
+
+    // bcast to cpu_tensor
+    CPPGRAD_MPI_CHECK(MPI_Bcast, cpu_tensor.data(), cpu_tensor.numel(), dtype_to_mpi((DType)metadata[1]), root_process, _comm);
+
+    cpu_tensor._storage->_strides = recv_strides;
+
+    return is_cuda ? cpu_tensor.cuda() : cpu_tensor;
 }
 
 void Communicator::send(const Tensor& tensor, int dest_process, int dest_tag)
 {
     // make it cpu; making it contiguous is expensive
     auto cpu_tensor = tensor.cpu();
+    cpu_tensor.set_requires_grad(false);
 
     // we need to send it partially; it's not trivial to send it as a single message
     auto shape_size = cpu_tensor.shape().size();
@@ -88,6 +108,8 @@ Tensor Communicator::gather(const Tensor& tensor, int root_process)
 {
     // make it cpu; making it contiguous is expensive
     auto cpu_tensor = tensor.cpu();
+    cpu_tensor.set_requires_grad(false);
+
     auto shape_size = cpu_tensor.shape().size();
 
     uint64_t metadata_size = rank() == root_process ? size() * 3 : 3;
@@ -135,9 +157,9 @@ Tensor Communicator::gather(const Tensor& tensor, int root_process)
         gather_tensor = Tensor { 0 };
     }
 
-    CPPGRAD_MPI_CHECK(MPI_Gather, tensor.data(), tensor.numel(),
+    CPPGRAD_MPI_CHECK(MPI_Gather, cpu_tensor.data(), cpu_tensor.numel(),
         dtype_to_mpi((DType)metadata[1]),
-        gather_tensor.data(), tensor.numel(),
+        gather_tensor.data(), cpu_tensor.numel(),
         dtype_to_mpi((DType)metadata[1]),
         root_process, _comm);
 
@@ -154,6 +176,8 @@ Tensor Communicator::all_gather(const Tensor& tensor)
 {
     // make it cpu; making it contiguous is expensive
     auto cpu_tensor = tensor.cpu();
+    cpu_tensor.set_requires_grad(false);
+
     auto shape_size = cpu_tensor.shape().size();
 
     uint64_t metadata_size = size() * 3;
@@ -176,7 +200,7 @@ Tensor Communicator::all_gather(const Tensor& tensor)
         }
     }
 
-    std::vector<size_t> gather_shape(tensor.shape());
+    std::vector<size_t> gather_shape(cpu_tensor.shape());
     gather_shape.insert(gather_shape.begin(), size());
 
     // need this be non empty on all nodes
@@ -185,9 +209,9 @@ Tensor Communicator::all_gather(const Tensor& tensor)
         gather_tensor._storage->_strides[i] = tensor._storage->_strides[i - 1];
     }
 
-    CPPGRAD_MPI_CHECK(MPI_Allgather, tensor.data(), tensor.numel(),
+    CPPGRAD_MPI_CHECK(MPI_Allgather, cpu_tensor.data(), cpu_tensor.numel(),
         dtype_to_mpi((DType)metadata[1]),
-        gather_tensor.data(), tensor.numel(),
+        gather_tensor.data(), cpu_tensor.numel(),
         dtype_to_mpi((DType)metadata[1]),
         _comm);
 
