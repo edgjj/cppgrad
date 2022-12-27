@@ -94,7 +94,7 @@ int main()
             optim.zero_grad();
 
             loss.backward();
-            //optim.step();
+            optim.step();
 
             if (k != 0 && k % print_threshold == 0) {
                 end = std::chrono::high_resolution_clock::now();
