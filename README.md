@@ -51,9 +51,6 @@ But future is not yet now...
 
     auto out = lin(x)[0];
     auto loss = nn::mse_loss(out, y);
-
-    out = lin(x)[0];
-    loss = nn::mse_loss(out, y);
 ```
 
 ## Quickstart
