@@ -14,10 +14,10 @@ struct SGD {
     void step()
     {
         for (auto& i : _params) {
-            auto loop_tensor = i->is_cuda_tensor() ? Tensor(_lr, i->dtype()).cuda().loop(i->grad().shape())
-                                                   : Tensor(_lr, i->dtype()).loop(i->grad().shape());
+            auto lr_tensor = Tensor::create_dirty(i->grad().shape(), i->dtype(), 8, i->device().clone());
+            lr_tensor.fill(_lr);
 
-            (*i) -= (i->grad() * loop_tensor);
+            (*i) -= (i->grad() * lr_tensor);
 
             // restore state
             i->set_requires_grad(true);

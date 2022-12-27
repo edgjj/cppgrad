@@ -9,10 +9,8 @@ Tensor mse_loss(const Tensor& y_hat, const Tensor& y)
     auto loss = y_hat - y;
     loss = loss * loss;
 
-    auto divisor = Tensor(y.numel(), loss.dtype());
-    if (loss.is_cuda_tensor()) { // to be changed; we definitely need to lift scalars without allocation
-        divisor = divisor.cuda();
-    }
+    auto divisor = Tensor::create_dirty({ 1 }, loss.dtype(), 8, loss.device().clone());
+    divisor.fill(y.numel());
 
     loss = sum(loss) / divisor;
     return loss;

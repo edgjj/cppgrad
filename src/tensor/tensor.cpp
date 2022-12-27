@@ -18,7 +18,7 @@ void Tensor::checked_copy(const Tensor& from, Tensor& to)
     size_t n_bytes = from.nbytes();
 
     if (from.device().type() == to.device().type()) { // homogeneous
-        from.executor().copy(from.data(), to.data(), n_bytes);
+        from.executor().strided_copy(from, to); // faster than memcpy
     } else if (from.is_cuda_tensor()) {
         from.executor().copy(from.data(), to.data(), n_bytes, impl::DeviceToHost);
     } else {

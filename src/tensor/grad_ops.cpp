@@ -9,8 +9,8 @@ tensor_list AddOp::forward(tensor_list inputs)
     auto &x = inputs[0],
          &y = inputs[1];
 
-    auto out = x.clone();
-    out.executor().add(out, y, out);
+    auto out = Tensor::create_dirty(x.shape(), x.dtype(), x.get_align(), x.device().clone());
+    out.executor().add(x, y, out);
 
     return { out };
 }
@@ -27,8 +27,8 @@ tensor_list SubOp::forward(tensor_list inputs)
     auto &x = inputs[0],
          &y = inputs[1];
 
-    auto out = x.clone();
-    out.executor().sub(out, y, out);
+    auto out = Tensor::create_dirty(x.shape(), x.dtype(), x.get_align(), x.device().clone());
+    out.executor().sub(x, y, out);
 
     return { out };
 }
@@ -48,10 +48,10 @@ tensor_list MultiplyOp::forward(tensor_list inputs)
     auto &x = inputs[0],
          &y = inputs[1];
 
-    auto out = x.clone();
+    auto out = Tensor::create_dirty(x.shape(), x.dtype(), x.get_align(), x.device().clone());
 
     save_for_backward(x, y);
-    out.executor().mul(out, y, out);
+    out.executor().mul(x, y, out);
 
     return { out };
 }
@@ -61,8 +61,8 @@ tensor_list MultiplyOp::backward(const Tensor& prev_grad)
     auto &x = saved()[0],
          &y = saved()[1];
 
-    auto grad_x = x.clone(),
-         grad_y = y.clone();
+    auto grad_x = Tensor::create_dirty(x.shape(), x.dtype(), x.get_align(), x.device().clone()),
+         grad_y = Tensor::create_dirty(y.shape(), y.dtype(), y.get_align(), y.device().clone());
 
     grad_x.executor().mul(prev_grad, y, grad_x);
     grad_y.executor().mul(prev_grad, x, grad_y);
@@ -76,10 +76,10 @@ tensor_list DivisionOp::forward(tensor_list inputs)
     auto &x = inputs[0],
          &y = inputs[1];
 
-    auto out = x.clone();
+    auto out = Tensor::create_dirty(x.shape(), x.dtype(), x.get_align(), x.device().clone());
 
     save_for_backward(x, y);
-    out.executor().div(out, y, out);
+    out.executor().div(x, y, out);
 
     return { out };
 }
@@ -89,8 +89,8 @@ tensor_list DivisionOp::backward(const Tensor& prev_grad)
     auto &x = saved()[0],
          &y = saved()[1];
 
-    auto grad_x = x.clone(),
-         grad_y = y.clone();
+    auto grad_x = Tensor::create_dirty(x.shape(), x.dtype(), x.get_align(), x.device().clone()),
+         grad_y = Tensor::create_dirty(y.shape(), y.dtype(), y.get_align(), y.device().clone());
 
     // (y*grad - x * grad) / y^2
     grad_x.executor().mul(prev_grad, y, grad_x); // f'(x) * y
@@ -112,8 +112,8 @@ tensor_list PowOp::forward(tensor_list inputs)
     auto &x = inputs[0],
          &y = inputs[1];
 
-    auto out = x.clone();
-    out.executor().pow(out, y, out);
+    auto out = Tensor::create_dirty(x.shape(), x.dtype(), x.get_align(), x.device().clone());
+    out.executor().pow(x, y, out);
 
     // save inputs & output
     save_for_backward(x, y, out);
@@ -203,10 +203,10 @@ tensor_list DotProductOp::backward(const Tensor& prev_grad)
 tensor_list LogOp::forward(tensor_list inputs)
 {
     auto& x = inputs[0];
-    auto out = x.clone();
+    auto out = Tensor::create_dirty(x.shape(), x.dtype(), x.get_align(), x.device().clone());
 
     save_for_backward(x);
-    out.executor().log(out, out);
+    out.executor().log(x, out);
 
     return { out };
 }
@@ -225,9 +225,9 @@ tensor_list LogOp::backward(const Tensor& prev_grad)
 tensor_list ExpOp::forward(tensor_list inputs)
 {
     auto& x = inputs[0];
-    auto out = x.clone();
+    auto out = Tensor::create_dirty(x.shape(), x.dtype(), x.get_align(), x.device().clone());
 
-    out.executor().exp(out, out);
+    out.executor().exp(x, out);
     save_for_backward(out);
 
     return { out };
@@ -247,9 +247,9 @@ tensor_list ExpOp::backward(const Tensor& prev_grad)
 tensor_list ReluOp::forward(tensor_list inputs)
 {
     auto& x = inputs[0];
-    auto out = x.clone();
+    auto out = Tensor::create_dirty(x.shape(), x.dtype(), x.get_align(), x.device().clone());
 
-    out.executor().relu(out, out);
+    out.executor().relu(x, out);
     save_for_backward(out);
 
     return { out };
@@ -258,7 +258,7 @@ tensor_list ReluOp::forward(tensor_list inputs)
 tensor_list ReluOp::backward(const Tensor& prev_grad)
 {
     auto& out = saved()[0];
-    auto grad = prev_grad.clone();
+    auto grad = Tensor::create_dirty(out.shape(), out.dtype(), out.get_align(), out.device().clone());
 
     grad.executor().sign(out, grad);
     grad.executor().mul(prev_grad, grad, grad);
@@ -270,9 +270,9 @@ tensor_list ReluOp::backward(const Tensor& prev_grad)
 tensor_list TanhOp::forward(tensor_list inputs)
 {
     auto& x = inputs[0];
-    auto out = x.clone();
+    auto out = Tensor::create_dirty(x.shape(), x.dtype(), x.get_align(), x.device().clone());
 
-    out.executor().tanh(out, out);
+    out.executor().tanh(x, out);
     save_for_backward(out);
 
     return { out };
@@ -295,17 +295,17 @@ tensor_list TanhOp::backward(const Tensor& prev_grad)
 tensor_list SignOp::forward(tensor_list inputs)
 {
     auto& x = inputs[0];
-    auto out = x.clone();
+    auto out = Tensor::create_dirty(x.shape(), x.dtype(), x.get_align(), x.device().clone());
 
-    out.executor().sign(out, out);
+    out.executor().sign(x, out);
 
     return { out };
 }
 
 tensor_list SignOp::backward(const Tensor& prev_grad)
 {
-    auto grad = prev_grad.clone();
-    grad.executor().sub(prev_grad, prev_grad, grad); // zero grad;
+    auto grad = Tensor::create_dirty(prev_grad.shape(), prev_grad.dtype(), prev_grad.get_align(), prev_grad.device().clone());
+    grad.fill(0); // zero grad
 
     return { grad };
 }
@@ -314,9 +314,9 @@ tensor_list SignOp::backward(const Tensor& prev_grad)
 tensor_list NegOp::forward(tensor_list inputs)
 {
     auto& x = inputs[0];
-    auto out = x.clone();
+    auto out = Tensor::create_dirty(x.shape(), x.dtype(), x.get_align(), x.device().clone());
 
-    out.executor().neg(out, out);
+    out.executor().neg(x, out);
 
     return { out };
 }

@@ -169,8 +169,9 @@ Tensor tanh(const Tensor& lhs)
 // synthesize from exp
 Tensor sigmoid(const Tensor& lhs)
 {
-    auto one = Tensor(1, lhs.dtype()).loop(lhs.shape());
-    one = lhs.is_cuda_tensor() ? one.cuda() : one;
+    auto one = Tensor::create_dirty(lhs.shape(), lhs.dtype(), 8, lhs.device().clone());
+    one.fill(1.0);
+
     // one MUST be rhs; due to it's loop nature
 
     auto numerator = exp(lhs);
