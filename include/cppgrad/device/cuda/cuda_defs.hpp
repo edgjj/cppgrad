@@ -5,15 +5,7 @@
 
 namespace cppgrad {
 
-#ifdef __CUDACC__
-
 namespace impl {
-
-    /**
-     * @brief Caffe2 inherited stuff
-     *
-     */
-
     constexpr unsigned int CPPGRAD_CUDA_NUM_THREADS = 128;
     constexpr unsigned int CPPGRAD_CUDA_MAX_GRID_SIZE = 4096;
 
@@ -30,6 +22,16 @@ namespace impl {
                 CPPGRAD_CUDA_MAX_GRID_SIZE),
             1u);
     }
+}
+
+#ifdef __CUDACC__
+
+namespace impl {
+
+    /**
+     * @brief Caffe2 inherited stuff
+     *
+     */
 
     inline dim3 grid_size_for_N_2D(const unsigned int Nx, const unsigned int Ny)
     {
@@ -42,6 +44,23 @@ namespace impl {
 
         grid.y = std::max(
             std::min((Ny + CPPGRAD_CUDA_NUM_THREADS_2D_Y - 1u) / CPPGRAD_CUDA_NUM_THREADS_2D_Y,
+                CPPGRAD_CUDA_MAX_GRID_SIZE_2D_Y),
+            1u);
+
+        return grid;
+    }
+
+    inline dim3 grid_size_for_N_2D_mm(const unsigned int Nx, const unsigned int Ny, const unsigned int block_sz)
+    {
+        dim3 grid;
+
+        grid.x = std::max(
+            std::min((Nx + block_sz - 1u) / block_sz,
+                CPPGRAD_CUDA_MAX_GRID_SIZE_2D_X),
+            1u);
+
+        grid.y = std::max(
+            std::min((Ny + block_sz - 1u) / block_sz,
                 CPPGRAD_CUDA_MAX_GRID_SIZE_2D_Y),
             1u);
 

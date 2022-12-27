@@ -53,7 +53,7 @@ namespace autograd {
         }
 
     private:
-        bool _no_save{ false };
+        bool _no_save { false };
         tensor_list _saved_data;
         tensor_list _edges;
     };
@@ -71,7 +71,7 @@ namespace autograd {
         {
             // check if at least 1 input requires grad; if not - just make pure forward call
             if (std::find_if(inputs.begin(), inputs.end(), [](auto& t) { return t.requires_grad(); }) == inputs.end()) {
-                auto fn = Fn{std::forward<OpArgs>(args)...};
+                auto fn = Fn { std::forward<OpArgs>(args)... };
                 fn.set_no_save(true);
 
                 return fn.forward(std::move(inputs));

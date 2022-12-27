@@ -83,7 +83,7 @@ int main()
         nn.cuda();
 #endif
 
-        constexpr size_t n_steps = 2000;
+        constexpr size_t n_steps = 50000;
         constexpr size_t print_threshold = 250;
 
         auto start = std::chrono::high_resolution_clock::now();

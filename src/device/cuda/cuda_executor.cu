@@ -145,9 +145,17 @@ void CUDAExecutor::sum(const Tensor& lhs, Tensor& dst)
 void CUDAExecutor::matmul(const Tensor& lhs, const Tensor& rhs, Tensor& dst)
 {
     auto fn = [&](auto out, auto p1, auto p2) {
-        // use p1 rows as dimX & p2 cols as dimY; result shape is {p1_rows, p2_cols}
-        CPPGRAD_CUDA_LAUNCH_2D(matmul_kernel, out.size(0), out.size(1)) // was p2.size(1), p2.size(0)
-        (p1, p2, out);
+        auto n_col_rows = p1.size(1); // or p2.size(0)
+        if (n_col_rows <= 64) {
+            matmul_kernel<typename decltype(out)::Type, 8>
+                <<<impl::grid_size_for_N_2D_mm(out.size(1), out.size(0), 8), dim3(8, 8)>>>(p1, p2, out);
+        } else if (n_col_rows <= 256) {
+            matmul_kernel<typename decltype(out)::Type, 16>
+                <<<impl::grid_size_for_N_2D_mm(out.size(1), out.size(0), 16), dim3(16, 16)>>>(p1, p2, out);
+        } else {
+            matmul_kernel<typename decltype(out)::Type, 32>
+                <<<impl::grid_size_for_N_2D_mm(out.size(1), out.size(0), 32), dim3(32, 32)>>>(p1, p2, out);
+        }
     };
 
     for_each_type(OpWrapper2D { std::move(fn), dst, lhs, rhs }, dst.dtype());

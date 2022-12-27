@@ -1,5 +1,7 @@
-#include <chrono>
+#include "deps/bench_util.hpp"
 #include <cppgrad/cppgrad.hpp>
+
+#include <chrono>
 #include <iostream>
 #include <numeric>
 #include <random>
@@ -122,6 +124,8 @@ int main()
 #ifdef CPPGRAD_HAS_CUDA
         auto [gpu_time, gpu_bw] = bench_device<f32, CUDA>(i * i, N_RUNS);
         std::cout << "\t[ GPU (CUDA)! ] avg_time: " << gpu_time << " ms; avg_bandwidth: " << gpu_bw << " GiB/s " << std::endl;
+        auto [speedup, efficiency] = bench::calc_metric_1d(gpu_time, cpu_time, i * i);
+        std::cout << "\t[ Metrics ] Speedup: " << speedup << "x; Efficiency: " << efficiency << std::endl;
 #endif
     }
 }

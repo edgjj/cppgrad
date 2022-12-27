@@ -160,35 +160,51 @@ __global__ void reduce_kernel(ConstStridedSpan<T> p1, ConstStridedSpan<T> p2, St
 }
 
 // tiled mm kernel
-template <typename T>
+template <typename T, int BlkSize>
 __global__ void matmul_kernel(ConstStridedSpan2D<T> p1, ConstStridedSpan2D<T> p2, StridedSpan2D<T> out)
 {
     // CPPGRAD_CUDA_NUM_THREADS_2D_X/Y is tile sz
-    __shared__ T tile_p1[CPPGRAD_CUDA_NUM_THREADS_2D_X][CPPGRAD_CUDA_NUM_THREADS_2D_Y];
-    __shared__ T tile_p2[CPPGRAD_CUDA_NUM_THREADS_2D_X][CPPGRAD_CUDA_NUM_THREADS_2D_Y];
+    __shared__ T tile_p1[BlkSize][BlkSize];
+    __shared__ T tile_p2[BlkSize][BlkSize];
 
     unsigned int row = blockIdx.y * blockDim.y + threadIdx.y;
     unsigned int col = blockIdx.x * blockDim.x + threadIdx.x;
 
-    unsigned int n_tiles = 1 + ((p2.size(0) - 1) / CPPGRAD_CUDA_NUM_THREADS_2D_X); // or (p1.size(1))
+    unsigned int n_tiles = 1 + ((p2.size(0) - 1) / BlkSize); // or (p1.size(1))
 
     auto tX = threadIdx.x;
     auto tY = threadIdx.y;
 
     T temp { 0 };
+
+    auto h1 = p1.size(0),
+         h2 = p2.size(0),
+         w1 = p1.size(1),
+         w2 = p2.size(1);
+
+    tile_p1[tY][tX] = 0;
+    tile_p2[tY][tX] = 0;
+
+    __syncthreads();
+
     for (unsigned int t = 0; t < n_tiles; t++) {
 
-        tile_p1[tY][tX] = row < p1.size(0) && t * CPPGRAD_CUDA_NUM_THREADS_2D_X + tX < p1.size(1)
-            ? p1(row, t * CPPGRAD_CUDA_NUM_THREADS_2D_X + tX)
-            : T(0);
+        auto tileStep = t * BlkSize;
+        auto tStepX = tileStep + tX,
+             tStepY = tileStep + tY;
 
-        tile_p2[tY][tX] = t * CPPGRAD_CUDA_NUM_THREADS_2D_Y + tY < p2.size(0) && col < p2.size(1)
-            ? p2(t * CPPGRAD_CUDA_NUM_THREADS_2D_Y + tY, col)
-            : T(0);
+        if (row < h1 && tStepX < w1) {
+            tile_p1[tY][tX] = p1(row, tStepX);
+        }
+
+        if (col < w2 && tStepY < h2) {
+            tile_p2[tY][tX] = p2(tStepY, col);
+        }
 
         __syncthreads();
 
-        for (unsigned int k = 0; k < CPPGRAD_CUDA_NUM_THREADS_2D_X; k++) {
+#pragma unroll
+        for (unsigned int k = 0; k < BlkSize; k++) {
             temp += tile_p1[tY][k] * tile_p2[k][tX];
         }
 

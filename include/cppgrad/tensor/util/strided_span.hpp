@@ -44,7 +44,6 @@ struct StridedSpan {
         // contiguous tensor has reverse-sorted strides
         _stride = std::is_sorted(t.strides().begin(), t.strides().end()) ? *t.strides().begin() : *t.strides().rbegin();
         _stride /= sizeof(T);
-
     }
 
     inline CPPGRAD_CUDA_FN T& operator[](size_t index)
@@ -52,12 +51,12 @@ struct StridedSpan {
         return *(_data + index * _stride);
     }
 
-    CPPGRAD_CUDA_FN size_t size() const
+    inline CPPGRAD_CUDA_FN size_t size() const
     {
         return _size;
     }
 
-    CPPGRAD_CUDA_FN bool is_contiguous() const
+    inline CPPGRAD_CUDA_FN bool is_contiguous() const
     {
         return _stride == 1;
     }
@@ -101,14 +100,24 @@ struct StridedSpan2D {
         return *(_data + row * _strides[0] + col * _strides[1]);
     }
 
-    CPPGRAD_CUDA_FN bool is_contiguous() const
+    inline CPPGRAD_CUDA_FN bool is_contiguous() const
     {
         return _strides[1] == 1;
     }
 
-    CPPGRAD_CUDA_FN size_t size(size_t dim)
+    inline CPPGRAD_CUDA_FN size_t stride(size_t dim)
+    {
+        return _strides[dim];
+    }
+
+    inline CPPGRAD_CUDA_FN size_t size(size_t dim)
     {
         return _sizes[dim];
+    }
+
+    inline CPPGRAD_CUDA_FN T* data()
+    {
+        return _data;
     }
 
 private:
