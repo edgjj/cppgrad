@@ -177,5 +177,9 @@ int main(int argc, char* argv[])
         std::cout << e.what() << std::endl;
     }
 }
+// build empty
+int main()
+{
+}
 
 #endif
