@@ -2,6 +2,7 @@
 #include "cppgrad/exceptions/generic_error.hpp"
 #include "cppgrad/exceptions/mpi_error.hpp"
 #include "cppgrad/tensor/tensor.hpp"
+#include <iostream>
 #include <mpi.h>
 
 namespace cppgrad::distributed {
@@ -85,18 +86,11 @@ Tensor Communicator::recv(int source_process, int source_tag)
 
 Tensor Communicator::gather(const Tensor& tensor, int root_process)
 {
-    if (size() < 2) {
-        throw exceptions::GenericError("Gathering is only allowed from 2+ processes in communicator.");
-    }
-
-    MPI_Status status;
-
     // make it cpu; making it contiguous is expensive
     auto cpu_tensor = tensor.cpu();
     auto shape_size = cpu_tensor.shape().size();
 
-    uint64_t gather_multiplier = rank() == root_process ? size() : 0;
-    uint64_t metadata_size = gather_multiplier * 3;
+    uint64_t metadata_size = rank() == root_process ? size() * 3 : 3;
 
     // shape_size, dtype, is_cuda
     uint64_t metadata[3] = { shape_size, cpu_tensor.dtype(), tensor.is_cuda_tensor() };
@@ -125,34 +119,20 @@ Tensor Communicator::gather(const Tensor& tensor, int root_process)
                                    : "Attempted to gather mis-shaped Tensor.");
     }
 
-    // copy metadata
-    if (rank() == root_process) {
-        metadata[0] = metadata_gather[0];
-        metadata[1] = metadata_gather[1];
-        metadata[2] = metadata_gather[2];
-    }
-
-    // let single process send shape & strides data
-    if (rank() == size() - root_process - 1) {
-        CPPGRAD_MPI_CHECK(MPI_Send, cpu_tensor.shape().data(), shape_size, MPI_UINT64_T, root_process, 0, _comm);
-        CPPGRAD_MPI_CHECK(MPI_Send, cpu_tensor.strides().data(), shape_size, MPI_UINT64_T, root_process, 0, _comm);
-    }
-
-    std::vector<size_t> recv_shape(metadata[0]), recv_strides(metadata[0]);
-
     // need this be non empty on all nodes
-    Tensor gather_tensor { 0 };
+    Tensor gather_tensor;
 
     if (rank() == root_process) {
-        CPPGRAD_MPI_CHECK(MPI_Recv, recv_shape.data(), metadata[0], MPI_UINT64_T, size() - root_process - 1, 0, _comm, &status);
-        CPPGRAD_MPI_CHECK(MPI_Recv, recv_strides.data(), metadata[0], MPI_UINT64_T, size() - root_process - 1, 0, _comm, &status);
+        std::vector<size_t> gather_shape(tensor.shape());
 
-        recv_shape.insert(recv_shape.begin(), size());
-        gather_tensor = Tensor::create_dirty(std::move(recv_shape), (DType)metadata[1], 8, new CPU());
+        gather_shape.insert(gather_shape.begin(), size());
+        gather_tensor = Tensor::create_dirty(std::move(gather_shape), (DType)metadata[1], 8, new CPU());
 
-        for (size_t i = 1; i < recv_strides.size() + 1; i++) {
-            gather_tensor._storage->_strides[i] = recv_strides[i - 1];
+        for (size_t i = 1; i < shape_size + 1; i++) {
+            gather_tensor._storage->_strides[i] = tensor._storage->_strides[i - 1];
         }
+    } else {
+        gather_tensor = Tensor { 0 };
     }
 
     CPPGRAD_MPI_CHECK(MPI_Gather, tensor.data(), tensor.numel(),
@@ -172,7 +152,47 @@ Tensor Communicator::gather(const Tensor& tensor, int root_process)
 
 Tensor Communicator::all_gather(const Tensor& tensor)
 {
-    return Tensor();
+    // make it cpu; making it contiguous is expensive
+    auto cpu_tensor = tensor.cpu();
+    auto shape_size = cpu_tensor.shape().size();
+
+    uint64_t metadata_size = size() * 3;
+
+    // shape_size, dtype, is_cuda
+    uint64_t metadata[3] = { shape_size, cpu_tensor.dtype(), tensor.is_cuda_tensor() };
+    std::vector<uint64_t> metadata_gather(metadata_size);
+
+    // gather metadata
+    CPPGRAD_MPI_CHECK(MPI_Allgather, metadata, 3, MPI_UINT64_T, metadata_gather.data(), 3, MPI_UINT64_T, _comm);
+
+    // this loop 'd run only on root process
+    int invalid_meta = 0;
+    for (size_t k = 0; k < metadata_gather.size(); k += 3) {
+        if (metadata_gather[k] != metadata_gather[0]
+            || metadata_gather[k + 1] != metadata_gather[1]
+            || metadata_gather[k + 2] != metadata_gather[2]) {
+            throw exceptions::GenericError("Received Tensor metadata is not equal to other tensors metadata.");
+            break;
+        }
+    }
+
+    std::vector<size_t> gather_shape(tensor.shape());
+    gather_shape.insert(gather_shape.begin(), size());
+
+    // need this be non empty on all nodes
+    Tensor gather_tensor = Tensor::create_dirty(std::move(gather_shape), (DType)metadata[1], 8, new CPU());
+    for (size_t i = 1; i < shape_size + 1; i++) {
+        gather_tensor._storage->_strides[i] = tensor._storage->_strides[i - 1];
+    }
+
+    CPPGRAD_MPI_CHECK(MPI_Allgather, tensor.data(), tensor.numel(),
+        dtype_to_mpi((DType)metadata[1]),
+        gather_tensor.data(), tensor.numel(),
+        dtype_to_mpi((DType)metadata[1]),
+        _comm);
+
+    bool is_cuda = metadata[2];
+    return is_cuda ? gather_tensor.cuda() : gather_tensor;
 }
 
 int Communicator::size() const

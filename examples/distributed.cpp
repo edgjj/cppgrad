@@ -3,24 +3,42 @@
 #include <cppgrad/cppgrad.hpp>
 #include <iomanip>
 #include <iostream>
+#include <sstream>
 
 using namespace cppgrad;
 
 template <DType DataType>
-void print_tensor(const Tensor& data)
+void tensor_to_string(const Tensor& data, std::stringstream& ss, bool is_last = true)
 {
-    std::cout << std::setprecision(8);
     if (data.shape().size() > 1) {
         for (size_t k = 0; k < data.shape()[0]; k++) {
-            print_tensor<DataType>(data[k]);
+            tensor_to_string<DataType>(data[k], ss, k == data.shape()[0] - 1);
         }
     } else {
-        std::cout << "[ ";
+        ss << std::setw(6);
+        ss << "[ ";
         for (size_t k = 0; k < data.numel(); k++) {
-            std::cout << (double)data[k].item<DataType>() << ' ';
+            ss << (double)data[k].item<DataType>() << ' ';
         }
-        std::cout << " ]" << std::endl;
+        ss << " ]";
+        if (!is_last) {
+            ss << ",";
+        }
+
+        ss << std::endl;
     }
+}
+
+template <DType DataType>
+std::string tensor_to_string(const Tensor& data)
+{
+    std::stringstream ss;
+    ss << std::setprecision(8);
+    ss << "[ " << std::endl;
+
+    tensor_to_string<DataType>(data, ss);
+    ss << " ]";
+    return ss.str();
 }
 
 int main(int argc, char* argv[])
@@ -35,9 +53,13 @@ int main(int argc, char* argv[])
 
         auto gathered = world.gather(tg, 0);
         if (world.rank() == 0) {
-            std::cout << "Gathered Tensor: " << std::endl;
-            print_tensor<f32>(gathered);
+            std::cout << "Gathered Tensor: \n"
+                      << tensor_to_string<f32>(gathered) << std::endl;
         }
+
+        auto all_gathered = world.all_gather(tg);
+        std::cout << "All-Gathered Tensor @ rank " << world.rank() << ": \n"
+                  << tensor_to_string<f32>(all_gathered) << std::endl;
 
         if (world.size() < 2) {
             std::cout << "Not enough processes to work, needed at least 2.";
@@ -57,7 +79,7 @@ int main(int argc, char* argv[])
             auto t1 = world.recv(0);
             std::cout << "Received Tensor from process 0; DType: " << dtype_name(t1.dtype()) << "; device type: " << t1.device().type() << std::endl;
 
-            print_tensor<f32>(t1);
+            std::cout << tensor_to_string<f32>(t1) << std::endl;
         }
     } catch (std::exception& e) {
         std::cout << e.what() << std::endl;
