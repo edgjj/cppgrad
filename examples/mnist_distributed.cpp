@@ -1,3 +1,5 @@
+#ifdef CPPGRAD_HAS_MPI
+
 #include <cppgrad/cppgrad.hpp>
 
 #include <chrono>
@@ -175,3 +177,5 @@ int main(int argc, char* argv[])
         std::cout << e.what() << std::endl;
     }
 }
+
+#endif
