@@ -79,8 +79,8 @@ TEST(TensorCUDAOpsTests, DotMultiBlockTest)
         v2.push_back(dist(engine));
     }
 
-    auto t1 = Tensor::from_blob<i32, CUDA>(v1.data(), { num_elements });
-    auto t2 = Tensor::from_blob<i32, CUDA>(v2.data(), { num_elements });
+    auto t1 = Tensor::from_blob<i32>(v1.data(), { num_elements }, kCUDA);
+    auto t2 = Tensor::from_blob<i32>(v2.data(), { num_elements }, kCUDA);
     ASSERT_EQ(t1[0].item<i32>(), v1[0]);
 
     auto t3 = cppgrad::mm(t1, t2);

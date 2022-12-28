@@ -4,7 +4,9 @@
 #include "cppgrad/exceptions/type_error.hpp"
 #include "cppgrad/tensor/tensor.hpp"
 
-#include "cppgrad/device/cuda/cuda.hpp"
+#include "cppgrad/device/registry.hpp"
+#include "cppgrad/device/tags.hpp"
+
 #include "cppgrad/tensor/ops/grad_ops.hpp"
 
 namespace cppgrad {
@@ -17,7 +19,7 @@ void Tensor::checked_copy(const Tensor& from, Tensor& to)
 
     size_t n_bytes = from.nbytes();
 
-    if (from.device().type() == to.device().type()) { // homogeneous
+    if (from.device() == to.device()) { // homogeneous
         from.executor().strided_copy(from, to); // faster than memcpy
     } else if (from.is_cuda_tensor()) {
         from.executor().copy(from.data(), to.data(), n_bytes, impl::DeviceToHost);
@@ -26,25 +28,31 @@ void Tensor::checked_copy(const Tensor& from, Tensor& to)
     }
 }
 
-Tensor Tensor::create_dirty(std::vector<size_t> shape,
+Tensor Tensor::create_dirty(const std::vector<size_t>& shape,
     DType type,
-    size_t alignment,
-    Device* device)
+    std::any device_tag)
 {
     auto type_size = dtype_size(type);
-
     size_t total_elements = std::reduce(shape.begin(), shape.end(), size_t(1), std::multiplies<size_t>());
     auto strides = impl::make_strides(shape, type_size);
 
-    std::align_val_t align { alignment };
-    auto* chunk = device->allocate(total_elements * type_size, align);
+    auto device_numeric_tag = DeviceRegistry::get()
+        .get_numeric_tag(device_tag);
+
+    auto* chunk = DeviceRegistry::get()
+        .by_numeric(device_numeric_tag)
+        .allocate(total_elements * type_size);
 
     return Tensor(chunk,
-        std::move(shape),
-        std::move(strides),
-        align,
-        device,
+        shape,
+        strides,
+        device_numeric_tag,
         type);
+}
+
+Tensor Tensor::create_dirty(const Tensor& other)
+{
+    return create_dirty(other.shape(), other.dtype(), other.device());
 }
 
 Tensor& Tensor::operator=(const Tensor& other)
@@ -64,7 +72,7 @@ Tensor& Tensor::operator=(const Tensor& other)
         exceptions::GenericError,
         "Assign (move) DType mismatch");
 
-    CPPGRAD_CHECK_EQ(device().type(), other.device().type(),
+    CPPGRAD_CHECK_EQ(device(), other.device(),
         exceptions::GenericError,
         "Assign (move) Device type mismatch");
 
@@ -95,7 +103,7 @@ Tensor& Tensor::operator=(Tensor&& other)
         exceptions::GenericError,
         "Assign (move) DType mismatch");
 
-    CPPGRAD_CHECK_EQ(device().type(), other.device().type(),
+    CPPGRAD_CHECK_EQ(device(), other.device(),
         exceptions::GenericError,
         "Assign (move) Device type mismatch");
 
@@ -133,8 +141,7 @@ Tensor::Tensor(std::initializer_list<Tensor> values)
     std::vector<size_t> shape { values.size() };
     shape.insert(shape.end(), base_shape.begin(), base_shape.end());
 
-    auto align = (size_t)values.begin()->base_storage()->_alignment;
-    *this = create_dirty(shape, base_dtype, align, new CPU());
+    *this = create_dirty(shape, base_dtype, kCPU); // copy device ?
 
     for (size_t i = 0; i < values.size(); i++) {
         (*this)(i) = *(values.begin() + i);
@@ -238,30 +245,26 @@ Tensor Tensor::T() const
     return PermuteOp::apply({ *this }, std::move(perm))[0];
 }
 
-Device& Tensor::device() const
+DeviceTag Tensor::device() const
 {
-    return *base_storage()->_device;
+    return base_storage()->_device;
 }
 
 #ifdef CPPGRAD_HAS_CUDA
 bool Tensor::is_cuda_tensor() const
 {
     // we assume that there's always device attached to Tensor
-    if (auto* ptr = dynamic_cast<CUDA*>(base_storage()->_device)) {
-        return true;
-    }
-
-    return false;
+    return device() == kCUDA;
 }
 
 Tensor Tensor::cuda() const
 {
-    // safe pass if no CUDA devices
-    if (is_cuda_tensor() || CUDA::num_devices() == 0) {
+    // its ok if no cuda devices -> cuda allocator will throw
+    if (is_cuda_tensor()) {
         return *this;
     }
 
-    auto new_tensor = create_dirty(shape(), dtype(), (size_t)_storage->_alignment, new CUDA());
+    auto new_tensor = create_dirty(shape(), dtype(), kCUDA);
     checked_copy(*this, new_tensor);
 
     if (requires_grad()) {
@@ -278,7 +281,7 @@ Tensor Tensor::cpu() const
         return *this;
     }
 
-    auto new_tensor = create_dirty(shape(), dtype(), (size_t)_storage->_alignment, new CPU());
+    auto new_tensor = create_dirty(shape(), dtype(), kCPU);
     checked_copy(*this, new_tensor);
 
     if (requires_grad()) {
@@ -308,7 +311,7 @@ Tensor Tensor::cuda() const
 
 Tensor Tensor::clone() const
 {
-    auto new_tensor = create_dirty(shape(), dtype(), get_align(), device().clone());
+    auto new_tensor = create_dirty(shape(), dtype(), device());
     checked_copy(*this, new_tensor);
     return new_tensor;
 }
@@ -320,7 +323,7 @@ Tensor Tensor::contiguous() const
         return *this;
     }
 
-    auto new_tensor = create_dirty(shape(), dtype(), get_align(), device().clone());
+    auto new_tensor = create_dirty(shape(), dtype(), device());
     executor().strided_copy(*this, new_tensor);
 
     return new_tensor;
@@ -338,9 +341,8 @@ Tensor Tensor::loop(const std::vector<size_t>& fake_shape) const
     std::vector<size_t> new_strides { 0 };
 
     Tensor result { _storage->_chunk,
-        std::move(new_shape),
-        std::move(new_strides),
-        _storage->_alignment,
+        new_shape,
+        new_strides,
         _storage->_device,
         _storage->_type_id };
 
@@ -367,11 +369,6 @@ bool Tensor::is_contiguous() const
 bool Tensor::is_loop() const
 {
     return !empty() && _storage->_strides.size() == 1 && _storage->_strides[0] == 0;
-}
-
-size_t Tensor::get_align() const
-{
-    return (size_t)base_storage()->_alignment;
 }
 
 Tensor& Tensor::grad()
@@ -439,25 +436,20 @@ Tensor::~Tensor()
     auto& actual_storage = base_storage();
 
     if (actual_storage.use_count() == 1) {
-        actual_storage->_device
-            ->deallocate(actual_storage->_chunk, actual_storage->_alignment);
-
-        delete actual_storage->_device;
+        DeviceRegistry::get().by_numeric(device()).deallocate(actual_storage->_chunk);
     }
 }
 
 Tensor::Tensor(std::byte* chunk,
-    std::vector<size_t>&& shape,
-    std::vector<size_t>&& strides,
-    std::align_val_t alignment,
-    Device* device,
+    const std::vector<size_t>& shape,
+    const std::vector<size_t>& strides,
+    DeviceTag device,
     DType type)
 {
     _storage = std::make_shared<impl::TensorData>(
         chunk,
-        alignment,
-        std::move(shape),
-        std::move(strides),
+        shape,
+        strides,
         device,
         type);
 
@@ -481,7 +473,7 @@ const std::shared_ptr<impl::TensorData>& Tensor::base_storage() const
 
 impl::Executor& Tensor::executor() const
 {
-    return device().get_executor();
+    return DeviceRegistry::get().by_numeric(device()).get_executor();
 }
 
 Tensor::Tensor(std::shared_ptr<impl::TensorData> base_storage)

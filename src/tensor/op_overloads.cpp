@@ -18,7 +18,7 @@ namespace {
             lhs.dtype(),
             rhs.dtype());
 
-        CPPGRAD_CHECK_EQ(lhs.device().type(), rhs.device().type(),
+        CPPGRAD_CHECK_EQ(lhs.device(), rhs.device(),
             exceptions::GenericError,
             "Device type mismatch");
     }
@@ -169,9 +169,7 @@ Tensor tanh(const Tensor& lhs)
 // synthesize from exp
 Tensor sigmoid(const Tensor& lhs)
 {
-    auto one = Tensor::create_dirty(lhs.shape(), lhs.dtype(), 8, lhs.device().clone());
-    one.fill(1.0);
-
+    auto one = Tensor::ones(lhs.shape(), lhs.dtype(), lhs.device());
     // one MUST be rhs; due to it's loop nature
 
     auto numerator = exp(lhs);

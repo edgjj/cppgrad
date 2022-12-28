@@ -6,19 +6,19 @@
 
 namespace cppgrad {
 
-std::byte* CPU::allocate(std::size_t count, std::align_val_t alignment)
+std::byte* CPU::allocate(std::size_t count)
 {
     try {
-        void* ptr = operator new[](count, alignment);
+        void* ptr = operator new[](count);
         return static_cast<std::byte*>(ptr);
     } catch (std::bad_alloc&) {
-        throw exceptions::OutOfMemoryError(type(), count);
+        throw exceptions::OutOfMemoryError("cpu", count);
     }
 }
 
-void CPU::deallocate(std::byte* ptr, std::align_val_t alignment)
+void CPU::deallocate(std::byte* ptr)
 {
-    operator delete[](ptr, alignment);
+    operator delete[](ptr);
 }
 
 impl::Executor& CPU::get_executor()
@@ -27,16 +27,6 @@ impl::Executor& CPU::get_executor()
     static impl::CPUExecutor executor;
 
     return executor;
-}
-
-Device* CPU::clone() const
-{
-    return new CPU();
-}
-
-std::string_view CPU::type()
-{
-    return "cpu";
 }
 
 }

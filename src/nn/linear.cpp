@@ -10,15 +10,11 @@ Linear::Linear(size_t in_size, size_t out_size, DType dtype, bool needs_bias)
         throw exceptions::GenericError("Invalid sizes specified for Linear layer.");
     }
 
-    _w = Tensor::create_dirty({ out_size, in_size }, dtype, 8, new CPU());
-    _w.random_fill(-0.1, 0.1);
-
+    _w = Tensor::rand({ out_size, in_size }, -0.1, 0.1, dtype, kCPU);
     _w.set_requires_grad(true);
 
     if (needs_bias) {
-        _b = Tensor::create_dirty({ out_size }, dtype, 8, new CPU());
-        _b.random_fill(-0.1, 0.1);
-
+        _b = Tensor::rand({ out_size }, -0.1, 0.1, dtype, kCPU);
         _b.set_requires_grad(true);
     }
 }

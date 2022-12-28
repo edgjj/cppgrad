@@ -5,6 +5,7 @@
 #include <vector> // std::vector
 
 #include "cppgrad/autograd/context.hpp"
+#include "cppgrad/device/tags.hpp"
 #include "cppgrad/tensor/typing.hpp"
 
 namespace cppgrad {
@@ -20,15 +21,13 @@ namespace impl {
      */
     struct TensorData {
         TensorData(std::byte* chunk,
-            std::align_val_t alignment,
-            std::vector<size_t>&& shape,
-            std::vector<size_t>&& strides,
-            Device* device,
+            const std::vector<size_t>& shape,
+            const std::vector<size_t>& strides,
+            DeviceTag device,
             DType type)
             : _chunk(chunk)
-            , _alignment(alignment)
-            , _shape(std::move(shape))
-            , _strides(std::move(strides))
+            , _shape(shape)
+            , _strides(strides)
             , _device(device)
             , _type_id(type)
         {
@@ -38,11 +37,6 @@ namespace impl {
          * @brief Pointer to row-major stored Tensor's data.
          */
         std::byte* _chunk;
-
-        /**
-         * @brief Tensor data alignment in bytes.
-         */
-        std::align_val_t _alignment;
         /**
          * @brief Tensor shape.
          */
@@ -55,7 +49,7 @@ namespace impl {
         /**
          * @brief Device (allocator) Tensor works with.
          */
-        Device* _device { nullptr };
+        DeviceTag _device;
 
         /**
          * @brief ID of current type stored in Tensor.

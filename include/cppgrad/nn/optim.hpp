@@ -14,9 +14,7 @@ struct SGD {
     void step()
     {
         for (auto& i : _params) {
-            auto lr_tensor = Tensor::create_dirty(i->grad().shape(), i->dtype(), 8, i->device().clone());
-            lr_tensor.fill(_lr);
-
+            auto lr_tensor = Tensor::full(i->grad().shape(), _lr, i->dtype(), i->device());
             (*i) -= (i->grad() * lr_tensor);
 
             // restore state

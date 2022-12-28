@@ -5,9 +5,8 @@
 #include <type_traits> // std::enable_if
 #include <vector> // std::vector
 
+#include <any> // std::any
 #include <numeric> // std::reduce
-
-#include "cppgrad/device/cpu/cpu.hpp"
 
 #include "cppgrad/tensor/impl.hpp"
 #include "cppgrad/tensor/util/impl_util.hpp"
@@ -17,6 +16,7 @@
 
 // ops
 #include "cppgrad/tensor/ops/op_overloads.hpp"
+#include "cppgrad/device/executor.hpp"
 
 // autograd
 #include "cppgrad/autograd/context.hpp"
@@ -27,31 +27,62 @@
 
 namespace cppgrad {
 
+namespace impl {
+    struct Executor;
+}
+
 /*
     may need a .contiguous() type thing to make transposed matrices flat
 */
 class Tensor : public autograd::AutogradInterface {
 public:
     /**
-     * @brief Returns a Tensor of chosen shape, alignment and device, filled with some value.
+     * @brief Returns a Tensor of chosen shape and device, filled with some value.
      *
      * @tparam T
      * @param shape
      * @param fill_value
-     * @param alignment
      * @param device
      * @return Tensor
      */
 
-    template <DType DataType, typename DeviceType = CPU>
-    static Tensor create(std::vector<size_t> shape = {},
-        dtype_t<DataType> fill_value = dtype_t<DataType> { 0 },
-        size_t alignment = alignof(dtype_t<DataType>))
+    template <typename T = float>
+    static Tensor full(const std::vector<size_t>& shape = {},
+        T fill_value = T{ 0 },
+        DType data_type = f32,
+        std::any device_tag = kCPU)
     {
-        auto result = create_dirty(shape, DataType, alignment, new DeviceType());
+        auto result = create_dirty(shape, data_type, device_tag);
         result.fill(fill_value);
 
         return result;
+    }
+
+    template <typename T = float>
+    static Tensor rand(const std::vector<size_t>& shape,
+        T lower_bound = T{ -1 },
+        T upper_bound = T{ 1 },
+        DType data_type = f32,
+        std::any device_tag = kCPU)
+    {
+        auto result = create_dirty(shape, data_type, device_tag);
+        result.random_fill(lower_bound, upper_bound);
+
+        return result;
+    }
+
+    static Tensor zeros(const std::vector<size_t>& shape,
+        DType data_type = f32,
+        std::any device_tag = kCPU)
+    {
+        return full(shape, 0, data_type, std::move(device_tag));
+    }
+
+    static Tensor ones(const std::vector<size_t>& shape,
+        DType data_type = f32,
+        std::any device_tag = kCPU)
+    {
+        return full(shape, 1, data_type, std::move(device_tag));
     }
 
     /**
@@ -65,12 +96,12 @@ public:
      * @param alignment
      * @return Tensor
      */
-    template <DType DataType, typename DeviceType = CPU>
+    template <DType DataType> // we keep DType here since we cant cast blobs
     static Tensor from_blob(dtype_t<DataType>* blob,
-        std::vector<size_t> shape = {},
-        size_t alignment = alignof(dtype_t<DataType>))
+        const std::vector<size_t>& shape = {},
+        std::any device_tag = kCPU)
     {
-        auto result = create_dirty(shape, DataType, alignment, new DeviceType());
+        auto result = create_dirty(shape, DataType, device_tag);
         constexpr size_t type_sz = sizeof(dtype_t<DataType>);
 
         /**
@@ -125,7 +156,6 @@ public:
         Tensor result { new_chunk,
             std::move(new_shape),
             std::move(new_strides),
-            _storage->_alignment,
             _storage->_device,
             _storage->_type_id };
 
@@ -146,10 +176,17 @@ public:
      * @param device
      * @return Tensor
      */
-    static Tensor create_dirty(std::vector<size_t> shape,
+    static Tensor create_dirty(const std::vector<size_t>& shape,
         DType type,
-        size_t alignment,
-        Device* device);
+        std::any device_tag);
+
+    /**
+     * @brief Creates dirty Tensor with specs of another Tensor
+     *
+     * @param other
+     * @return Tensor
+     */
+    static Tensor create_dirty(const Tensor& other);
 
     // default constructors
     Tensor(const Tensor&) = default;
@@ -170,33 +207,16 @@ public:
     // this ensures that _storage won't be empty
     Tensor();
 
-    template <typename Type, std::enable_if_t<std::is_arithmetic_v<Type>>* = nullptr>
-    Tensor(Type value)
-    {
-        *this = create<rtype_v<Type>>({ 1 }, value);
-    }
 
     template <typename Type, std::enable_if_t<std::is_arithmetic_v<Type>>* = nullptr>
-    Tensor(Type value, DType dtype)
+    Tensor(Type value, DType dtype = rtype_v<Type>)
     {
-        for_each_type(
-            [&, value](auto tag) {
-                using CastedType = decltype(tag);
-
-                *this = create<rtype_v<CastedType>>({ 1 }, CastedType(value));
-            },
-            dtype);
+        *this = full({ 1 }, value, dtype);
     }
 
-    template <typename Type>
-    Tensor(std::initializer_list<Type> values)
-    {
-        *this = from_blob<rtype_v<Type>>(const_cast<Type*>(values.begin()),
-            { values.size() });
-    }
 
     template <typename Type>
-    Tensor(std::initializer_list<Type> values, DType dtype)
+    Tensor(std::initializer_list<Type> values, DType dtype = rtype_v<Type>)
     {
         for_each_type(
             [&, values](auto tag) {
@@ -248,6 +268,7 @@ public:
     template <typename Type = double>
     void random_fill(Type lower_bound = -1.0, Type upper_bound = 1.0)
     {
+        // must do the same casting thing as fill()
         executor().random_fill(*this, lower_bound, upper_bound);
     }
 
@@ -345,12 +366,10 @@ public:
     Tensor T() const;
 
     /**
-     * @brief Returns reference to corresponding Tensor device
-     * UB if Tensor has no device somehow.
-     *
-     * @return Device&
+     * @brief Return tag representing current device.
+     * @return DeviceTag
      */
-    Device& device() const;
+    DeviceTag device() const;
 
     /**
      * @brief Utility method to get executor of attached device
@@ -429,13 +448,6 @@ public:
      */
     bool is_loop() const;
 
-    /**
-     * @brief Get alignment of current Tensor
-     *
-     * @return size_t
-     */
-    size_t get_align() const;
-
     /*
         @brief Autograd methods go here;
 
@@ -476,10 +488,9 @@ private:
      * @param device
      */
     Tensor(std::byte* chunk,
-        std::vector<size_t>&& shape,
-        std::vector<size_t>&& strides,
-        std::align_val_t alignment,
-        Device* device,
+        const std::vector<size_t>& shape,
+        const std::vector<size_t>& strides,
+        DeviceTag device,
         DType type);
 
     /**

@@ -116,15 +116,7 @@ void backward(Tensor& root)
     };
 
     // init root grad Tensor
-    root.grad() = Tensor::create_dirty(root.shape(), root.dtype(), root.get_align(), root.device().clone());
-
-    // this is ugliest thing ever; to be changed with autocast fill
-    for_each_type(
-        [&](auto tag) {
-            using Type = decltype(tag);
-            root.grad().fill(Type(1));
-        },
-        root.grad().dtype());
+    root.grad() = Tensor::ones(root.shape(), root.dtype(), root.device());
 
     // uh oh some crazy matches here
     for (auto& node : itertools::reversed(topo)) {
@@ -143,7 +135,9 @@ void backward(Tensor& root)
             }
 
             if (n.grad().empty()) {
-                n.grad() = std::move(g);
+                // we need to clone there; this grad will be passed to backward as prev_grad;
+                // very inefficient, needs changes
+                n.grad() = g.clone();
             } else {
                 // accumulate grad; g executor is actually same as n.grad() executor
                 g.executor().add(n.grad(), g, n.grad());

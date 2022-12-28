@@ -97,7 +97,7 @@ Tensor Communicator::recv(int source_process, int source_tag)
     CPPGRAD_MPI_CHECK(MPI_Recv, recv_shape.data(), metadata[0], MPI_UINT64_T, source_process, source_tag, _comm, &status);
     CPPGRAD_MPI_CHECK(MPI_Recv, recv_strides.data(), metadata[0], MPI_UINT64_T, source_process, source_tag, _comm, &status);
 
-    auto tensor = Tensor::create_dirty(std::move(recv_shape), (DType)metadata[1], 8, new CPU());
+    auto tensor = Tensor::create_dirty(std::move(recv_shape), (DType)metadata[1], kCPU);
     CPPGRAD_MPI_CHECK(MPI_Recv, tensor.data(), tensor.numel(), dtype_to_mpi((DType)metadata[1]), source_process, source_tag, _comm, &status);
 
     tensor._storage->_strides = recv_strides;
@@ -148,7 +148,7 @@ Tensor Communicator::gather(const Tensor& tensor, int root_process)
         std::vector<size_t> gather_shape(tensor.shape());
 
         gather_shape.insert(gather_shape.begin(), size());
-        gather_tensor = Tensor::create_dirty(std::move(gather_shape), (DType)metadata[1], 8, new CPU());
+        gather_tensor = Tensor::create_dirty(std::move(gather_shape), (DType)metadata[1], kCPU);
 
         for (size_t i = 1; i < shape_size + 1; i++) {
             gather_tensor._storage->_strides[i] = tensor._storage->_strides[i - 1];
@@ -204,7 +204,7 @@ Tensor Communicator::all_gather(const Tensor& tensor)
     gather_shape.insert(gather_shape.begin(), size());
 
     // need this be non empty on all nodes
-    Tensor gather_tensor = Tensor::create_dirty(std::move(gather_shape), (DType)metadata[1], 8, new CPU());
+    Tensor gather_tensor = Tensor::create_dirty(std::move(gather_shape), (DType)metadata[1], kCPU);
     for (size_t i = 1; i < shape_size + 1; i++) {
         gather_tensor._storage->_strides[i] = tensor._storage->_strides[i - 1];
     }

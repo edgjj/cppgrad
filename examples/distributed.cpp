@@ -48,7 +48,7 @@ int main(int argc, char* argv[])
         distributed::Environment env(argc, argv);
         distributed::Communicator world;
 
-        auto tg = Tensor::create<f32>({ 2, 2 });
+        auto tg = Tensor::full({ 2, 2 }, 0, f32);
         tg.random_fill();
 
         auto gathered = world.gather(tg, 0);
@@ -67,7 +67,7 @@ int main(int argc, char* argv[])
         }
 
         if (world.rank() == 0) {
-            auto t0 = Tensor::create<f32>({ 8, 8 }, 98);
+            auto t0 = Tensor::full({ 8, 8 }, 98, f32);
 #ifdef CPPGRAD_HAS_CUDA
             t0 = t0.cuda(); // test CUDA tensor send
 #endif
@@ -77,7 +77,7 @@ int main(int argc, char* argv[])
             std::cout << "Sent Tensor from process 0 to process 1" << std::endl;
         } else if (world.rank() == 1) {
             auto t1 = world.recv(0);
-            std::cout << "Received Tensor from process 0; DType: " << dtype_name(t1.dtype()) << "; device type: " << t1.device().type() << std::endl;
+            std::cout << "Received Tensor from process 0; DType: " << dtype_name(t1.dtype()) << "; device type: " << t1.device() << std::endl;
 
             std::cout << tensor_to_string<f32>(t1) << std::endl;
         }

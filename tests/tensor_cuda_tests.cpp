@@ -12,7 +12,7 @@ using namespace cppgrad;
 
 TEST(TensorCUDATests, InitTensor)
 {
-    auto tensor = Tensor::create<f32, CUDA>({ 128, 8 });
+    auto tensor = Tensor::zeros({ 128, 8 }, f32, kCUDA);
 
     auto shape = std::vector<size_t> { 128, 8 };
     auto strides = std::vector<size_t> { 32, 4 };
@@ -23,7 +23,7 @@ TEST(TensorCUDATests, InitTensor)
 
 TEST(TensorCUDATests, ViewTensor)
 {
-    auto tensor = Tensor::create<f32, CUDA>({ 128, 8 });
+    auto tensor = Tensor::zeros({ 128, 8 }, f32, kCUDA);
 
     auto new_tensor = tensor[0];
 
@@ -58,7 +58,7 @@ TEST(TensorCUDATests, AssignTensorVector)
 TEST(TensorCUDATests, OOMTest)
 {
     size_t size = (size_t)1 << 48;
-    ASSERT_THROW(Tensor::create<i64>({ size }), exceptions::OutOfMemoryError);
+    ASSERT_THROW(Tensor::zeros({ size }, i64, kCUDA), exceptions::OutOfMemoryError);
 }
 
 TEST(TensorCUDATests, AssignTensorMultidimensional)

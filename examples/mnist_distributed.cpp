@@ -49,12 +49,10 @@ struct DistributedSGD {
     void step()
     {
         for (auto& i : _params) {
-            auto lr_tensor = Tensor::create_dirty(i->grad().shape(),
+            auto lr_tensor = Tensor::full(i->grad().shape(),
+                _lr,
                 i->dtype(),
-                8,
-                i->device().clone());
-
-            lr_tensor.fill(_lr);
+                i->device());
 
             auto calculated_change = i->grad() * lr_tensor;
             auto gathered_change = _comm.gather(calculated_change, 0);
@@ -125,7 +123,7 @@ int main(int argc, char* argv[])
         distributed::Environment env(argc, argv);
         distributed::Communicator world;
 
-        auto x = Tensor::create<f32>({ 1, MNIST_W * MNIST_H }, 0.5f);
+        auto x = Tensor::full({ 1, MNIST_W * MNIST_H }, 0.5f, f32);
         auto y = Tensor { { 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f } };
 
         LinearNN nn;
@@ -159,7 +157,6 @@ int main(int argc, char* argv[])
 
                 end = std::chrono::high_resolution_clock::now();
                 std::chrono::duration<double, std::milli> run_ms = end - start;
-                start = end;
 
                 std::cout << "Time per " << print_threshold << " steps: " << run_ms.count() << "ms" << std::endl;
 
@@ -173,6 +170,9 @@ int main(int argc, char* argv[])
                 print_tensor<f32>(loss);
 
                 std::cout << std::endl;
+
+                // avoid print_tensors as expensive op
+                start = std::chrono::high_resolution_clock::now();
             }
         }
 

@@ -9,8 +9,7 @@ Tensor mse_loss(const Tensor& y_hat, const Tensor& y)
     auto loss = y_hat - y;
     loss = loss * loss;
 
-    auto divisor = Tensor::create_dirty({ 1 }, loss.dtype(), 8, loss.device().clone());
-    divisor.fill(y.numel());
+    auto divisor = Tensor::full({ 1 }, y.numel(), loss.dtype(), loss.device());
 
     loss = sum(loss) / divisor;
     return loss;

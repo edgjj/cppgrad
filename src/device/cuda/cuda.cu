@@ -31,7 +31,7 @@ private:
     cub::CachingDeviceAllocator _allocator;
 };
 
-std::byte* CUDA::allocate(std::size_t count, std::align_val_t alignment)
+std::byte* CUDA::allocate(std::size_t count)
 {
     std::byte* ptr;
 
@@ -43,13 +43,13 @@ std::byte* CUDA::allocate(std::size_t count, std::align_val_t alignment)
         size_t free_mem = 0, total_mem = 0;
         cudaMemGetInfo(&free_mem, &total_mem);
 
-        throw exceptions::OutOfMemoryError(type(), count, free_mem);
+        throw exceptions::OutOfMemoryError("cpu", count, free_mem);
     }
 
     return ptr;
 }
 
-void CUDA::deallocate(std::byte* ptr, std::align_val_t alignment)
+void CUDA::deallocate(std::byte* ptr)
 {
     CUDAAllocatorWrapper::get().DeviceFree((void*)ptr);
 }
@@ -60,16 +60,6 @@ impl::Executor& CUDA::get_executor()
     static impl::CUDAExecutor executor(*this);
 
     return executor;
-}
-
-Device* CUDA::clone() const
-{
-    return new CUDA();
-}
-
-std::string_view CUDA::type()
-{
-    return "cuda"; // include device number there later like cuda:X
 }
 
 int CUDA::num_devices()

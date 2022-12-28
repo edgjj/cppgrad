@@ -7,13 +7,10 @@ namespace cppgrad {
 
 struct CPU : Device {
 
-    std::byte* allocate(std::size_t count, std::align_val_t alignment) override;
-    void deallocate(std::byte* ptr, std::align_val_t alignment) override;
+    std::byte* allocate(std::size_t count) override;
+    void deallocate(std::byte* ptr) override;
 
     impl::Executor& get_executor() override;
-    Device* clone() const override;
-
-    std::string_view type() override;
 };
 
 }

@@ -67,7 +67,7 @@ struct LinearNN : nn::Module {
 int main()
 {
     try {
-        auto x = Tensor::create<f32>({ 1, MNIST_W * MNIST_H }, 0.5f);
+        auto x = Tensor::full({ 1, MNIST_W * MNIST_H }, 0.5f);
         auto y = Tensor { { 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f } };
 
         LinearNN nn;
@@ -99,8 +99,7 @@ int main()
             if (k != 0 && k % print_threshold == 0) {
                 end = std::chrono::high_resolution_clock::now();
                 std::chrono::duration<double, std::milli> run_ms = end - start;
-                start = end;
-
+                
                 std::cout << "Time per " << print_threshold << " steps: " << run_ms.count() << "ms" << std::endl;
 
                 std::cout << "Output: ";
@@ -113,6 +112,9 @@ int main()
                 print_tensor<f32>(loss);
 
                 std::cout << std::endl;
+
+                // avoid print_tensors as expensive op
+                start = std::chrono::high_resolution_clock::now();
             }
         }
 
