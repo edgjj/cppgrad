@@ -12,7 +12,7 @@ TEST(NNTests, LinearTest)
     nn::Linear lin(16, 10, f64);
     nn::optim::SGD optim(lin, 1e-2);
 
-    auto x = Tensor::full({ { 1, 16 } }, 0.5, f64);
+    auto x = Tensor::full({ 1, 16 }, 0.5, f64);
     auto y = Tensor { { 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 } };
 
     // change weights/bias

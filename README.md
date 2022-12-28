@@ -37,7 +37,7 @@ But future is not yet now...
     nn::Linear lin(16, 10, f64);
     nn::optim::SGD optim(lin, 1e-2);
 
-    auto x = Tensor::create<f64>({ { 1, 16 } }, 0.5);
+    auto x = Tensor::full({ 1, 16 }, 0.5, f64);
     auto y = Tensor { { 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 } };
 
 	for (int i = 0; i < 384; i++) {
