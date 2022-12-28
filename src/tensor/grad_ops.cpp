@@ -17,6 +17,7 @@ tensor_list AddOp::forward(tensor_list inputs)
 
 tensor_list AddOp::backward(const Tensor& prev_grad)
 {
+    // CLONEOK: should pass forward
     auto grad = prev_grad.clone();
     return { grad, grad };
 }
@@ -35,6 +36,7 @@ tensor_list SubOp::forward(tensor_list inputs)
 
 tensor_list SubOp::backward(const Tensor& prev_grad)
 {
+    // CLONEOK: should pass forward
     auto grad_x = prev_grad.clone(),
          grad_y = prev_grad.clone();
 
@@ -96,9 +98,11 @@ tensor_list DivisionOp::backward(const Tensor& prev_grad)
     grad_x.executor().mul(prev_grad, y, grad_x); // f'(x) * y
     grad_y.executor().mul(prev_grad, x, grad_y); // g'(x) * x
 
-    // pow 2
-    y.executor().mul(y, y, y);
+    // div by y ^ 2
     grad_x.executor().div(grad_x, y, grad_x);
+    grad_x.executor().div(grad_x, y, grad_x);
+
+    grad_y.executor().div(grad_y, y, grad_y);
     grad_y.executor().div(grad_y, y, grad_y);
 
     grad_y.executor().neg(grad_y, grad_y);
@@ -127,17 +131,16 @@ tensor_list PowOp::backward(const Tensor& prev_grad)
          &y = saved()[1],
          &out = saved()[2];
 
-    auto grad_x = out.clone(),
-         grad_y = out.clone();
+    auto grad_x = Tensor::create_dirty(out.shape(), out.dtype(), out.get_align(), out.device().clone()),
+         grad_y = Tensor::create_dirty(out.shape(), out.dtype(), out.get_align(), out.device().clone());
 
-    grad_x.executor().mul(prev_grad, grad_x, grad_x); // out->grad * pow(self->val, other->val)
-    y.executor().div(y, x, y); // other->val = other->val / self->val
-    // out->grad * other->val * pow(self->val, other->val) / self->val -> out->grad * other->val * pow(self->val, other->val - 1)
-    grad_x.executor().mul(grad_x, y, grad_x);
+    grad_x.executor().mul(prev_grad, out, grad_x); // out->grad * pow(self->val, other->val)
+    grad_x.executor().mul(grad_x, y, grad_x); // out->grad * pow(self->val, other->val) * other->val
+    grad_x.executor().div(grad_x, x, grad_x); // out->grad * pow(self->val, other->val) * other->val / self->val
 
-    grad_y.executor().mul(prev_grad, grad_y, grad_y); // out->grad * pow(self->val, other->val)
-    x.executor().log(x, x); // x = ln(x)
-    grad_y.executor().mul(x, grad_y, grad_y); // out->grad * pow(self->val, other->val) * ln(x)
+    grad_y.executor().log(x, grad_y); // ln(x)
+    grad_y.executor().mul(prev_grad, grad_y, grad_y); // out->grad * ln(x)
+    grad_y.executor().mul(out, grad_y, grad_y); // out->grad * ln(x) * pow(self->val, other->val)
 
     return { grad_x, grad_y };
 }
@@ -161,6 +164,7 @@ tensor_list MatmulOp::backward(const Tensor& prev_grad)
     auto &x = saved()[0],
          &y = saved()[1];
 
+    // NOT OK: should replace these clones
     auto grad_x = x.clone(),
          grad_y = y.clone();
 
@@ -189,8 +193,8 @@ tensor_list DotProductOp::backward(const Tensor& prev_grad)
     auto &x = saved()[0],
          &y = saved()[1];
 
-    auto grad_x = x.clone(),
-         grad_y = y.clone();
+    auto grad_x = Tensor::create_dirty(x.shape(), x.dtype(), x.get_align(), x.device().clone()),
+         grad_y = Tensor::create_dirty(y.shape(), y.dtype(), y.get_align(), y.device().clone());
 
     // using loop() fakes out Tensor length, allowing iteration point to same mem location
     grad_x.executor().mul(y, prev_grad.loop(y.shape()), grad_x);
@@ -215,8 +219,11 @@ tensor_list LogOp::backward(const Tensor& prev_grad)
 {
     auto& x = saved()[0];
 
-    auto grad = prev_grad.clone();
-    grad.executor().div(grad, x, grad); // d * 1 / x
+    auto grad = Tensor::create_dirty(prev_grad.shape(),
+        prev_grad.dtype(),
+        prev_grad.get_align(),
+        prev_grad.device().clone());
+    grad.executor().div(prev_grad, x, grad); // d * 1 / x
 
     return { grad };
 }
@@ -236,9 +243,12 @@ tensor_list ExpOp::forward(tensor_list inputs)
 tensor_list ExpOp::backward(const Tensor& prev_grad)
 {
     auto& out = saved()[0];
-    auto grad = prev_grad.clone();
+    auto grad = Tensor::create_dirty(prev_grad.shape(),
+        prev_grad.dtype(),
+        prev_grad.get_align(),
+        prev_grad.device().clone());
 
-    grad.executor().mul(grad, out, grad); // d * e ^ x
+    grad.executor().mul(prev_grad, out, grad); // d * e ^ x
 
     return { grad };
 }
@@ -281,12 +291,12 @@ tensor_list TanhOp::forward(tensor_list inputs)
 tensor_list TanhOp::backward(const Tensor& prev_grad)
 {
     auto& x = saved()[0];
-    auto grad = prev_grad.clone(); // 1 - tanh(x) * tanh(x)
+    auto grad = Tensor::create_dirty(prev_grad.shape(), prev_grad.dtype(), prev_grad.get_align(), prev_grad.device().clone()); // 1 - tanh(x) * tanh(x)
 
-    x.executor().mul(x, x, x); // tanh^2(x)
-    x.executor().mul(x, grad, x); // tanh^2(x) * g
+    grad.executor().mul(x, x, grad); // tanh^2(x)
+    grad.executor().mul(grad, prev_grad, grad); // tanh^2(x) * g
 
-    grad.executor().sub(grad, x, grad); // g - g * tanh^2(x)
+    grad.executor().sub(prev_grad, grad, grad); // g - g * tanh^2(x)
 
     return { grad };
 }
@@ -323,7 +333,7 @@ tensor_list NegOp::forward(tensor_list inputs)
 
 tensor_list NegOp::backward(const Tensor& prev_grad)
 {
-    auto grad = prev_grad.clone();
+    auto grad = Tensor::create_dirty(prev_grad.shape(), prev_grad.dtype(), prev_grad.get_align(), prev_grad.device().clone());
     grad.executor().neg(prev_grad, grad); // negate grad
 
     return { grad };
@@ -354,6 +364,7 @@ PermuteOp::PermuteOp(std::vector<size_t> order)
 
 tensor_list PermuteOp::forward(tensor_list inputs)
 {
+    // CLONEOK: should pass forward
     auto& x = inputs[0];
     auto out = x.clone();
 
@@ -367,6 +378,7 @@ tensor_list PermuteOp::forward(tensor_list inputs)
 
 tensor_list PermuteOp::backward(const Tensor& prev_grad)
 {
+    // CLONEOK: should pass forward
     auto grad = prev_grad.clone();
     std::vector<size_t> new_order(_saved_order.size());
 

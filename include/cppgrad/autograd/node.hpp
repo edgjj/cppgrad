@@ -44,10 +44,11 @@ namespace autograd {
                 return;
             }
 
-            _saved_data.insert(_saved_data.end(), { variables.clone()... });
+            _saved_data.insert(_saved_data.end(), { std::forward<Tensors>(variables)... });
         }
 
-        tensor_list& saved()
+        // should be const
+        const tensor_list& saved()
         {
             return _saved_data;
         }

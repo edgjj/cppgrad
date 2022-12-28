@@ -342,7 +342,7 @@ public:
      *
      * @return Tensor transposed Tensor
      */
-    Tensor T();
+    Tensor T() const;
 
     /**
      * @brief Returns reference to corresponding Tensor device

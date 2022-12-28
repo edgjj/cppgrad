@@ -229,7 +229,8 @@ Tensor Tensor::base()
     return Tensor(base_storage());
 }
 
-Tensor Tensor::T()
+// ok to const; has nothing to deal with original Tensor
+Tensor Tensor::T() const
 {
     std::vector<size_t> perm(shape().size());
     std::iota(perm.rbegin(), perm.rend(), 0);
