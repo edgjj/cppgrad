@@ -15,8 +15,8 @@
 #include "cppgrad/exceptions/index_error.hpp"
 
 // ops
-#include "cppgrad/tensor/ops/op_overloads.hpp"
 #include "cppgrad/device/executor.hpp"
+#include "cppgrad/tensor/ops/op_overloads.hpp"
 
 // autograd
 #include "cppgrad/autograd/context.hpp"
@@ -48,7 +48,7 @@ public:
 
     template <typename T = float>
     static Tensor full(const std::vector<size_t>& shape = {},
-        T fill_value = T{ 0 },
+        T fill_value = T { 0 },
         DType data_type = f32,
         std::any device_tag = kCPU)
     {
@@ -60,8 +60,8 @@ public:
 
     template <typename T = float>
     static Tensor rand(const std::vector<size_t>& shape,
-        T lower_bound = T{ -1 },
-        T upper_bound = T{ 1 },
+        T lower_bound = T { -1 },
+        T upper_bound = T { 1 },
         DType data_type = f32,
         std::any device_tag = kCPU)
     {
@@ -207,13 +207,11 @@ public:
     // this ensures that _storage won't be empty
     Tensor();
 
-
     template <typename Type, std::enable_if_t<std::is_arithmetic_v<Type>>* = nullptr>
     Tensor(Type value, DType dtype = rtype_v<Type>)
     {
         *this = full({ 1 }, value, dtype);
     }
-
 
     template <typename Type>
     Tensor(std::initializer_list<Type> values, DType dtype = rtype_v<Type>)

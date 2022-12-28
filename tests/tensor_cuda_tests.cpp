@@ -1,3 +1,5 @@
+#ifdef CPPGRAD_HAS_CUDA
+
 #include <cppgrad/cppgrad.hpp>
 #include <cppgrad/exceptions/index_error.hpp>
 #include <cppgrad/exceptions/out_of_memory.hpp>
@@ -7,8 +9,6 @@
 using namespace cppgrad;
 
 // simply build to nothing if there's no CUDA support
-
-#ifdef CPPGRAD_HAS_CUDA
 
 TEST(TensorCUDATests, InitTensor)
 {

@@ -1,3 +1,5 @@
+#ifdef CPPGRAD_HAS_CUDA
+
 #include <cppgrad/cppgrad.hpp>
 #include <gtest/gtest.h>
 
@@ -5,10 +7,9 @@
 
 using namespace cppgrad;
 
-#ifdef CPPGRAD_HAS_CUDA
-
 /**
- *  Ensure that Sum, Mul, Relu backwards are ok.
+ * @brief
+ *
  */
 TEST(AutogradCudaTests, MicrogradTest1)
 {

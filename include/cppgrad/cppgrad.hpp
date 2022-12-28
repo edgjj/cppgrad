@@ -1,8 +1,10 @@
 #ifndef CPPGRAD_MAIN_HPP
 #define CPPGRAD_MAIN_HPP
 
-#include <cppgrad/device/default_devices.hpp>
+// clang-format off
 #include <cppgrad/tensor/tensor.hpp>
+#include <cppgrad/device/default_devices.hpp>
+// clang-format on
 
 #include <cppgrad/nn/linear.hpp>
 #include <cppgrad/nn/losses.hpp>
