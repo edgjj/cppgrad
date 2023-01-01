@@ -1,3 +1,8 @@
+// Copyright (c) 2023 Yegor Suslin
+// 
+// This software is released under the MIT License.
+// https://opensource.org/licenses/MIT
+
 #include "cppgrad/device/cpu/cpu.hpp"
 #include "cppgrad/device/cpu/cpu_executor.hpp"
 #include "cppgrad/exceptions/out_of_memory.hpp"

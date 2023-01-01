@@ -1,10 +1,13 @@
+// Copyright (c) 2023 Yegor Suslin
+//
+// This software is released under the MIT License.
+// https://opensource.org/licenses/MIT
+
 #ifndef CPPGRAD_MAIN_HPP
 #define CPPGRAD_MAIN_HPP
 
-// clang-format off
-#include <cppgrad/tensor/tensor.hpp>
 #include <cppgrad/device/default_devices.hpp>
-// clang-format on
+#include <cppgrad/tensor/tensor.hpp>
 
 #include <cppgrad/nn/linear.hpp>
 #include <cppgrad/nn/losses.hpp>

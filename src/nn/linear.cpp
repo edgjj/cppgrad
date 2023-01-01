@@ -1,3 +1,8 @@
+// Copyright (c) 2023 Yegor Suslin
+// 
+// This software is released under the MIT License.
+// https://opensource.org/licenses/MIT
+
 #include "cppgrad/nn/linear.hpp"
 #include "cppgrad/exceptions/generic_error.hpp"
 #include <iostream>

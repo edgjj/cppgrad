@@ -1,7 +1,11 @@
+// Copyright (c) 2023 Yegor Suslin
+// 
+// This software is released under the MIT License.
+// https://opensource.org/licenses/MIT
+
 #ifndef CPPGRAD_TENSOR_IMPL_HPP
 #define CPPGRAD_TENSOR_IMPL_HPP
 
-#include <new> // std::align_val_t
 #include <vector> // std::vector
 
 #include "cppgrad/autograd/context.hpp"

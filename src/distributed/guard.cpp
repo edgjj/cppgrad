@@ -1,3 +1,8 @@
+// Copyright (c) 2023 Yegor Suslin
+// 
+// This software is released under the MIT License.
+// https://opensource.org/licenses/MIT
+
 #include "cppgrad/distributed/guard.hpp"
 #include "cppgrad/distributed/error_string.hpp"
 #include "cppgrad/exceptions/generic_error.hpp"

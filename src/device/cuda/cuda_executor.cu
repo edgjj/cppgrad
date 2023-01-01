@@ -1,3 +1,8 @@
+// Copyright (c) 2023 Yegor Suslin
+// 
+// This software is released under the MIT License.
+// https://opensource.org/licenses/MIT
+
 #include "cppgrad/device/cuda/cuda.hpp"
 #include "cppgrad/device/cuda/cuda_executor.hpp"
 #include "cppgrad/device/cuda/kernels/ops_kernels.cuh"

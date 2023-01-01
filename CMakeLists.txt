@@ -1,3 +1,8 @@
+# Copyright (c) 2023 Yegor Suslin
+
+# This software is released under the MIT License.
+# https://opensource.org/licenses/MIT
+
 cmake_minimum_required(VERSION 3.20)
 
 project(cppgrad VERSION 0.0.1 LANGUAGES CXX)

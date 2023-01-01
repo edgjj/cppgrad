@@ -1,3 +1,8 @@
+# Copyright (c) 2023 Yegor Suslin
+
+# This software is released under the MIT License.
+# https://opensource.org/licenses/MIT
+
 include (${PROJECT_SOURCE_DIR}/cmake/setup_gtest.cmake)
 cppgrad_setup_gtest()
 

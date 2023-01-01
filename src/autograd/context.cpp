@@ -1,3 +1,8 @@
+// Copyright (c) 2023 Yegor Suslin
+// 
+// This software is released under the MIT License.
+// https://opensource.org/licenses/MIT
+
 #include "cppgrad/autograd/context.hpp"
 #include "cppgrad/autograd/grad_mode.hpp"
 #include "cppgrad/autograd/node.hpp"

@@ -1,3 +1,8 @@
+# Copyright (c) 2023 Yegor Suslin
+
+# This software is released under the MIT License.
+# https://opensource.org/licenses/MIT
+
 # CPU device lib
 file (GLOB 
     CPU_SOURCES 

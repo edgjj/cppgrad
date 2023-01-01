@@ -1,3 +1,8 @@
+// Copyright (c) 2023 Yegor Suslin
+// 
+// This software is released under the MIT License.
+// https://opensource.org/licenses/MIT
+
 #ifndef CPPGRAD_CUDA_OPS_KERNELS_CUH
 #define CPPGRAD_CUDA_OPS_KERNELS_CUH
 

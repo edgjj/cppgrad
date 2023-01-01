@@ -1,3 +1,8 @@
+// Copyright (c) 2023 Yegor Suslin
+// 
+// This software is released under the MIT License.
+// https://opensource.org/licenses/MIT
+
 #include "cppgrad/exceptions/generic_error.hpp"
 #include "cppgrad/exceptions/type_error.hpp"
 #include "cppgrad/tensor/ops/grad_ops.hpp"

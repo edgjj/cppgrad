@@ -1,3 +1,8 @@
+# Copyright (c) 2023 Yegor Suslin
+
+# This software is released under the MIT License.
+# https://opensource.org/licenses/MIT
+
 function(cppgrad_setup_gtest)
 	include(FetchContent)
 	FetchContent_Declare(

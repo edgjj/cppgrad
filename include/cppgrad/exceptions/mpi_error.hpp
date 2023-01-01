@@ -1,3 +1,8 @@
+// Copyright (c) 2023 Yegor Suslin
+// 
+// This software is released under the MIT License.
+// https://opensource.org/licenses/MIT
+
 #ifndef CPPGRAD_MPI_EXCEPTION_HPP
 #define CPPGRAD_MPI_EXCEPTION_HPP
 

@@ -1,3 +1,8 @@
+// Copyright (c) 2023 Yegor Suslin
+// 
+// This software is released under the MIT License.
+// https://opensource.org/licenses/MIT
+
 #ifdef CPPGRAD_HAS_CUDA
 
 #include <cppgrad/cppgrad.hpp>
